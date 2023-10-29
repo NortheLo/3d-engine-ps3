@@ -1,10 +1,10 @@
-#include "../include/pad.h"
+#include "../include/pad.hpp"
 
 /* 
 	Normalize the analog stick axis.
 	0 is default position and values range from -1 to 1 in realtive to the default position.
 */
-f32 normalizeAnalogSticks(f32 raw) {
+f32 Pad::normalizeAnalogSticks(f32 raw) {
 	f32 normalized = (raw - 128.f) / 128.f;
 	return normalized;
 }
@@ -12,7 +12,7 @@ f32 normalizeAnalogSticks(f32 raw) {
 /* 
 	Fill the moveData struct with the data from the gamepad.
 */
-void getControl(padData* pad, moveData* mov) {
+void Pad::getControl(padData* pad, moveData* mov) {
 	// Right stick movement
 	// Get the stick values
 	mov->vert_ang 	= M_PI * normalizeAnalogSticks((f32) pad->ANA_R_V);

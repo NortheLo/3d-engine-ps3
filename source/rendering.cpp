@@ -1,22 +1,25 @@
-#include "../include/rendering.h"
+#include "../include/rendering.hpp"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include <iostream>
+#include <cmath>
 #include <ppu-types.h>
 #include <sys/socket.h>
 
 #include <tiny3d.h>
 #include <matrix.h>
 
-#include "../include/pad.h"
-#include "../include/map.h"
+#include "../include/pad.hpp"
+#include "../include/map.hpp"
 
-VECTOR eye = {1.0f, 1.0f, 1.0f};    // Camera's position
-VECTOR center = {0.f, 0.f, 0.f}; 	// Point the camera is looking at
-VECTOR up = {0.0f, 1.0f, 0.0f};     // Up direction
 
-void rendering_loop() {
+Renderer::Renderer() {
+	int err = tiny3d_Init(TINY3D_Z16 | 4 * 1024 * 1024);
+	if (err < 0) {
+		perror("Couldnt init Tiny-3D");
+	}
+}
+
+void Renderer::rendering_loop() {
 
 	padData gamepad;
 	padInfo gamepad_info;
@@ -48,13 +51,13 @@ void rendering_loop() {
 	}
 }
 
-void render_pipeline(size_t index, padInfo* pad_info, padData* pad) {
+void Renderer::render_pipeline(size_t index, padInfo* pad_info, padData* pad_data) {
 
 	    sysUtilCheckCallback();
     	ioPadGetInfo(pad_info);
 
         if(pad_info->status)  {
-			ioPadGetData(0, pad);
+			ioPadGetData(0, pad_data);
 
 			// Dunno why it is used in all examples
 			// MATRIX projectionMatrix = MatrixIdentity();
@@ -65,7 +68,7 @@ void render_pipeline(size_t index, padInfo* pad_info, padData* pad) {
 			tiny3d_SetProjectionMatrix(&mat);
 
 			moveData mov;
-			getControl(pad, &mov);
+			pad.getControl(pad_data, &mov);
 
 			MATRIX rotZMat = MatrixRotationZ(mov.vert_ang);
 			MATRIX rotYMat = MatrixRotationX(mov.vert_ang);
