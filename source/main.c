@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <time.h>
 #include <sys/systime.h>
@@ -27,7 +27,6 @@ void render_pipeline(size_t index, padInfo* pad_info, padData* pad) {
 
 	    sysUtilCheckCallback();
     	ioPadGetInfo(pad_info);
-		
         if(pad_info->status)  {
 			ioPadGetData(0, pad);
 
@@ -39,12 +38,12 @@ void render_pipeline(size_t index, padInfo* pad_info, padData* pad) {
 
 			tiny3d_SetProjectionMatrix(&mat);
 
-			moveData* mov;
-			getControl(pad, mov);
+			moveData mov;
+			getControl(pad, &mov);
 
-			MATRIX rotZMat = MatrixRotationZ(mov->vert_ang);
-			MATRIX rotYMat = MatrixRotationX(mov->vert_ang);
-			MATRIX rotXMat = MatrixRotationY(mov->horz_ang);
+			MATRIX rotZMat = MatrixRotationZ(mov.vert_ang);
+			MATRIX rotYMat = MatrixRotationX(mov.vert_ang);
+			MATRIX rotXMat = MatrixRotationY(mov.horz_ang);
 
 			// Rotate first
 			rotZMat 	= MatrixMultiply(rotZMat, MatrixTranslation(cube[index].x, cube[index].y, cube[index].z));
@@ -52,7 +51,7 @@ void render_pipeline(size_t index, padInfo* pad_info, padData* pad) {
 			MATRIX MVP  = MatrixMultiply(rotXMat, rotZMat);
 
 			// Scale according to the vertical position of the left stick 
-			MATRIX scale = MatrixScale(mov->distance, mov->distance, mov->distance);
+			MATRIX scale = MatrixScale(mov.distance, mov.distance, mov.distance);
 			MVP = MatrixMultiply(MVP, scale);
 
 			tiny3d_SetMatrixModelView(&MVP);

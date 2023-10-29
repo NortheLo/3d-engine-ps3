@@ -1,9 +1,5 @@
 #include "../include/pad.h"
 
-#include <ppu-types.h>
-#include <sysutil/sysutil.h>
-#include <io/pad.h>
-
 /* 
 	Normalize the analog stick axis.
 	0 is default position and values range from -1 to 1 in realtive to the default position.

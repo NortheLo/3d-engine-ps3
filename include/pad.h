@@ -1,6 +1,7 @@
 #pragma once
 
-// For reading the gamepad
+#include <stdlib.h>
+#include <stdio.h>
 #include <ppu-types.h>
 #include <sysutil/sysutil.h>
 #include <io/pad.h>
