@@ -17,5 +17,5 @@ void Pad::getControl(padData* pad, moveData* mov) {
 	// Get the stick values
 	mov->vert_ang 	= M_PI * normalizeAnalogSticks((f32) pad->ANA_R_V);
 	mov->horz_ang 	= M_PI * normalizeAnalogSticks((f32) pad->ANA_R_H);
-	mov->distance	= 0.1  + normalizeAnalogSticks((f32) pad->ANA_L_V);
+	mov->distance	= -0.1  + normalizeAnalogSticks((f32) pad->ANA_L_V);
 }
