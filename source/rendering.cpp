@@ -17,6 +17,9 @@ Renderer::Renderer() {
 	if (err < 0) {
 		perror("Couldnt init Tiny-3D");
 	}
+
+	// starting value
+	mov.distance = 0.1;
 }
 
 void Renderer::rendering_loop() {
@@ -41,7 +44,7 @@ void Renderer::rendering_loop() {
 			
 			//cube[i].x += 5.f * normalizeAnalogSticks((f32) gamepad.ANA_L_H);	
 
-			tiny3d_VertexPos(100 * cube[i].x, 100 * cube[i].y, 100 * cube[i].z);
+			tiny3d_VertexPos(cube[i].x, cube[i].y, cube[i].z);
             tiny3d_VertexColor(cube[i].color);
 		}
 
@@ -67,7 +70,7 @@ void Renderer::render_pipeline(size_t index, padInfo* pad_info, padData* pad_dat
 
 			tiny3d_SetProjectionMatrix(&mat);
 
-			moveData mov;
+			
 			pad.getControl(pad_data, &mov);
 
 			MATRIX rotZMat = MatrixRotationZ(mov.vert_ang);

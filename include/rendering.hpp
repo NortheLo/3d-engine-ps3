@@ -6,6 +6,7 @@
 
 class Renderer {
     public:
+        moveData mov;
         Renderer();
 
         void rendering_loop();
@@ -16,4 +17,5 @@ class Renderer {
         VECTOR center = {0.f, 0.f, 0.f}; 	// Point the camera is looking at
         VECTOR up = {0.0f, 1.0f, 0.0f};     // Up direction
         Pad pad;
+        
 };
