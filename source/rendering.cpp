@@ -19,7 +19,7 @@ Renderer::Renderer() {
 	}
 
 	// starting value
-	mov.distance = 0.1;
+	mov.position_z_axis = 0.1;
 }
 
 void Renderer::rendering_loop() {
@@ -73,9 +73,13 @@ void Renderer::render_pipeline(size_t index, padInfo* pad_info, padData* pad_dat
 			
 			pad.getControl(pad_data, &mov);
 
+			MATRIX xMatOffset = MatrixIdentity();
+			xMatOffset.data[0][0] += mov.horz_ang;
+
 			MATRIX rotZMat = MatrixRotationZ(mov.vert_ang);
 			MATRIX rotYMat = MatrixRotationX(mov.vert_ang);
 			MATRIX rotXMat = MatrixRotationY(mov.horz_ang);
+			
 
 			// Rotate first
 			rotZMat 	= MatrixMultiply(rotZMat, MatrixTranslation(cube[index].x, cube[index].y, cube[index].z));
@@ -83,7 +87,7 @@ void Renderer::render_pipeline(size_t index, padInfo* pad_info, padData* pad_dat
 			MATRIX MVP  = MatrixMultiply(rotXMat, rotZMat);
 
 			// Scale according to the vertical position of the left stick 
-			MATRIX scale = MatrixScale(mov.distance, mov.distance, mov.distance);
+			MATRIX scale = MatrixScale(mov.position_z_axis, mov.position_z_axis, mov.position_z_axis);
 			MVP = MatrixMultiply(MVP, scale);
 
 			tiny3d_SetMatrixModelView(&MVP);
