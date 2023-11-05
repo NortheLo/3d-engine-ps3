@@ -13,37 +13,37 @@ typedef struct {
 vertices cube[] = {
 	// Front face
 	{ -1.0f, -1.0f, -1.0f, 0xff000000 }, // Bottom left
-	{ 1.0f, -1.0f, -1.0f, 0xff0000ff },  // Bottom right
-	{ 1.0f, 1.0f, -1.0f, 0xff00ff00 },   // Top right
-	{ -1.0f, 1.0f, -1.0f, 0xff00ffff },  // Top left
+	{ 1.0f, -1.0f, -1.0f, 0xff000000 },  // Bottom right
+	{ 1.0f, 1.0f, -1.0f, 0xff000000 },   // Top right
+	{ -1.0f, 1.0f, -1.0f, 0xff000000 },  // Top left
 
 	// Back face
 	{ -1.0f, -1.0f, 1.0f, 0xffff0000 },  // Bottom left
-	{ 1.0f, -1.0f, 1.0f, 0xffff00ff },   // Bottom right
-	{ 1.0f, 1.0f, 1.0f, 0xffffff00 },    // Top right
-	{ -1.0f, 1.0f, 1.0f, 0xffffffff },   // Top left
+	{ 1.0f, -1.0f, 1.0f, 0xffff0000 },   // Bottom right
+	{ 1.0f, 1.0f, 1.0f, 0xffff0000 },    // Top right
+	{ -1.0f, 1.0f, 1.0f, 0xffff0000 },   // Top left
 
 	// Left face
-	{ -1.0f, -1.0f, -1.0f, 0xff000000 }, // Bottom front
-	{ -1.0f, 1.0f, -1.0f, 0xff00ffff },  // Top front
+	{ -1.0f, -1.0f, -1.0f, 0xffffffff }, // Bottom front
+	{ -1.0f, 1.0f, -1.0f, 0xffffffff },  // Top front
 	{ -1.0f, 1.0f, 1.0f, 0xffffffff },   // Top back
-	{ -1.0f, -1.0f, 1.0f, 0xffff0000 },  // Bottom back
+	{ -1.0f, -1.0f, 1.0f, 0xffffffff },  // Bottom back
 
 	// Right face
-	{ 1.0f, -1.0f, -1.0f, 0xff0000ff },  // Bottom front
-	{ 1.0f, 1.0f, -1.0f, 0xff00ff00 },   // Top front
-	{ 1.0f, 1.0f, 1.0f, 0xffffff00 },    // Top back
-	{ 1.0f, -1.0f, 1.0f, 0xffff00ff },   // Bottom back
+	{ 1.0f, -1.0f, -1.0f, 0x0f },  // Bottom front
+	{ 1.0f, 1.0f, -1.0f, 0x0f },   // Top front
+	{ 1.0f, 1.0f, 1.0f, 0x0f },    // Top back
+	{ 1.0f, -1.0f, 1.0f, 0x0f },   // Bottom back
 
 	// Top face
-	{ -1.0f, 1.0f, -1.0f, 0xff00ffff },  // Front left
+	{ -1.0f, 1.0f, -1.0f, 0xff00ff00 },  // Front left
 	{ 1.0f, 1.0f, -1.0f, 0xff00ff00 },   // Front right
-	{ 1.0f, 1.0f, 1.0f, 0xffffff00 },    // Back right
-	{ -1.0f, 1.0f, 1.0f, 0xffffffff },   // Back left
+	{ 1.0f, 1.0f, 1.0f, 0xff00ff00 },    // Back right
+	{ -1.0f, 1.0f, 1.0f, 0xff00ff00 },   // Back left
 
 	// Bottom face
-	{ -1.0f, -1.0f, -1.0f, 0xff000000 }, // Front left
-	{ 1.0f, -1.0f, -1.0f, 0xff0000ff },  // Front right
-	{ 1.0f, -1.0f, 1.0f, 0xffff0000 },   // Back right
+	{ -1.0f, -1.0f, -1.0f, 0xffff00ff }, // Front left
+	{ 1.0f, -1.0f, -1.0f, 0xffff00ff },  // Front right
+	{ 1.0f, -1.0f, 1.0f, 0xffff00ff },   // Back right
 	{ -1.0f, -1.0f, 1.0f, 0xffff00ff }   // Back left
 };

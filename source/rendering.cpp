@@ -10,7 +10,7 @@
 
 #include "../include/pad.hpp"
 #include "../include/map.hpp"
-
+#include "../include/matrix2.h"
 
 Renderer::Renderer() {
 	int err = tiny3d_Init(TINY3D_Z16 | 4 * 1024 * 1024);
@@ -19,7 +19,7 @@ Renderer::Renderer() {
 	}
 
 	// starting value
-	mov.distance = 0.1;
+	mov.position_z_axis = 0.1;
 }
 
 void Renderer::rendering_loop() {
@@ -27,8 +27,11 @@ void Renderer::rendering_loop() {
 	padData gamepad;
 	padInfo gamepad_info;
 	ioPadInit(2);
+	f32 x_mov = 0.f;
 
 	while (true) {
+		x_mov *= -10 * pad.normalizeAnalogSticks((f32) gamepad.ANA_L_H);
+
 		tiny3d_Clear(0xff000000, TINY3D_CLEAR_ALL);
 
         int err_poly = tiny3d_SetPolygon(TINY3D_POLYGON);
@@ -39,12 +42,11 @@ void Renderer::rendering_loop() {
 		
 		tiny3d_Project3D();
 
+
         for (size_t i = 0; i < sizeof(cube) / sizeof(vertices); i++) {
 			render_pipeline(i, &gamepad_info, &gamepad);
 			
-			//cube[i].x += 5.f * normalizeAnalogSticks((f32) gamepad.ANA_L_H);	
-
-			tiny3d_VertexPos(cube[i].x, cube[i].y, cube[i].z);
+			tiny3d_VertexPos(cube[i].x + x_mov, cube[i].y, cube[i].z);
             tiny3d_VertexColor(cube[i].color);
 		}
 
@@ -61,31 +63,23 @@ void Renderer::render_pipeline(size_t index, padInfo* pad_info, padData* pad_dat
 
         if(pad_info->status)  {
 			ioPadGetData(0, pad_data);
-
-			// Dunno why it is used in all examples
-			// MATRIX projectionMatrix = MatrixIdentity();
-			// projectionMatrix = MatrixProjPerspective(90, 1920.0f / 1080.0f, 1.f, 1e3);
-			
-			MATRIX mat = MakeLookAtMatrix(eye, center, up);
-
-			tiny3d_SetProjectionMatrix(&mat);
-
-			
 			pad.getControl(pad_data, &mov);
 
-			MATRIX rotZMat = MatrixRotationZ(mov.vert_ang);
-			MATRIX rotYMat = MatrixRotationX(mov.vert_ang);
-			MATRIX rotXMat = MatrixRotationY(mov.horz_ang);
 
-			// Rotate first
-			rotZMat 	= MatrixMultiply(rotZMat, MatrixTranslation(cube[index].x, cube[index].y, cube[index].z));
-			rotZMat 	= MatrixMultiply(rotYMat, rotZMat);
-			MATRIX MVP  = MatrixMultiply(rotXMat, rotZMat);
+			// For horizontal movement
+			VectorCrossProduct(&cameraFront, &up);
+			VectorNormalize(&cameraFront);
+			VectorMultiply(&cameraFront, mov.position_x_axis);
+			VectorAdd(&cameraFront, &cameraPos);
+			
+			MATRIX mat = MakeLookAtMatrix(cameraPos, cameraFront, up);
 
+			tiny3d_SetProjectionMatrix(&mat);
+			
 			// Scale according to the vertical position of the left stick 
-			MATRIX scale = MatrixScale(mov.distance, mov.distance, mov.distance);
+			MATRIX scale = MatrixScale(mov.position_z_axis, mov.position_z_axis, mov.position_z_axis);
+			MATRIX MVP = MatrixIdentity(); 
 			MVP = MatrixMultiply(MVP, scale);
-
 			tiny3d_SetMatrixModelView(&MVP);
 		}
 }

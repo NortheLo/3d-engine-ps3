@@ -11,9 +11,12 @@
 typedef struct {
     padData gamepad;
 	padInfo gamepad_info;
-	f32 vert_ang;
-	f32 horz_ang;
-	f32 distance;
+
+	// Renaming all variable necessary
+	f32 direction_vertical;
+	f32 direction_horizontal;
+	f32 position_z_axis;
+	f32 position_x_axis;
 } moveData;
 
 class Pad {
