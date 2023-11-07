@@ -26,7 +26,6 @@ Renderer::Renderer() {
 	TO-DO:
 	- Fix by constant l v stick position that the object keeps moving
 	- Fix to see sides by going to the right/left
-	- Implement pitch 
 	- Fix yaw
 */
 
@@ -72,27 +71,42 @@ void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
 			ioPadGetData(0, pad_data);
 			pad.getControl(pad_data, &mov);
 
-			// Pitch and yaw
-			cameraFront.x = cos(mov.yaw) * cos(mov.pitch);
-			cameraFront.y = 			   sin(mov.pitch);
-			cameraFront.z = sin(mov.yaw) * cos(mov.pitch);
-			VectorNormalize(&cameraFront);
-
-			// For horizontal movement
-			VectorCrossProduct(&cameraFront, &up);
-			VectorNormalize(&cameraFront);
-			VectorMultiply(&cameraFront, -1 * abs(mov.position_x_axis));
-			VectorAdd(&cameraFront, &cameraPos);
-
+			cameraFront = Position(&cameraPos, &cameraFront);
+			cameraFront = Direction(&cameraFront);
 			
 			MATRIX mat = MakeLookAtMatrix(cameraPos, cameraFront, up);
-			mat = MatrixMultiply(mat, rot_horz);
 			tiny3d_SetProjectionMatrix(&mat);
 			
-			// Scale according to the vertical position of the left stick 
-			MATRIX scale = MatrixScale(mov.position_z_axis, mov.position_z_axis, mov.position_z_axis);
-			MATRIX MVP = MatrixIdentity(); 
-			MVP = MatrixMultiply(MVP, scale);
+			MATRIX MVP = Scale();
+
 			tiny3d_SetMatrixModelView(&MVP);
 		}
+}
+
+VECTOR Renderer::Position(VECTOR* cameraPosition, VECTOR* cameraTarget) {
+	// For horizontal movement
+	VectorCrossProduct(cameraTarget, &up);
+	VectorNormalize(cameraTarget);
+	VectorMultiply(cameraTarget, -1 * abs(mov.position_x_axis));
+	VectorAdd(cameraTarget, cameraPosition);
+
+	return *cameraTarget;
+}
+
+VECTOR Renderer::Direction(VECTOR* cameraFront) {
+	// Pitch and yaw
+	cameraFront->x = cos(mov.yaw) * cos(mov.pitch);
+	cameraFront->y = 			    sin(mov.pitch);
+	cameraFront->z = sin(mov.yaw) * cos(mov.pitch);
+	VectorNormalize(cameraFront);
+
+	return *cameraFront;
+}
+
+MATRIX Renderer::Scale() {
+	// Scale according to the vertical position of the left stick 
+	MATRIX scale = MatrixScale(mov.position_z_axis, mov.position_z_axis, mov.position_z_axis);
+	MATRIX MVP = MatrixIdentity(); 
+	MVP = MatrixMultiply(MVP, scale);
+	return MVP;
 }

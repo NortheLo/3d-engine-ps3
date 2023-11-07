@@ -5,7 +5,7 @@
 #include "../include/rendering.hpp"
 #include "../include/pad.hpp"
 
-s32 main(s32 argc, const char* argv[]) {	
+s32 main() {	
 
 	Renderer ren = Renderer();
 	ren.rendering_loop();
