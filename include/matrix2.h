@@ -9,6 +9,12 @@ void VectorAdd(VECTOR* v1, VECTOR* v2) {
     v1->z += v2->z;
 }
 
+void VectorSub(VECTOR* v1, VECTOR* v2) {
+    v1->x -= v2->x;
+    v1->y -= v2->y;
+    v1->z -= v2->z;
+}
+
 /* Multiplication with a scalar */
 void VectorMultiply(VECTOR* v1, float scalar) {
     v1->x *= scalar;

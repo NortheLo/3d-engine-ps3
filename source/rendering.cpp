@@ -22,15 +22,23 @@ Renderer::Renderer() {
 	mov.position_z_axis = 0.1;
 }
 
+/* 
+	TO-DO:
+	- Fix by constant l v stick position that the object keeps moving
+	- Fix to see sides by going to the right/left
+	- Implement pitch 
+	- Fix yaw
+*/
+
 void Renderer::rendering_loop() {
 
 	padData gamepad;
 	padInfo gamepad_info;
 	ioPadInit(2);
-	f32 x_mov = 0.f;
+	f32 x_position_camera = 0.f;
 
 	while (true) {
-		x_mov = 10 * pad.normalizeAnalogSticks((f32) gamepad.ANA_L_H);
+		x_position_camera += 0.1f * pad.normalizeAnalogSticks((f32) gamepad.ANA_L_H);
 
 		tiny3d_Clear(0xff000000, TINY3D_CLEAR_ALL);
 
@@ -41,12 +49,11 @@ void Renderer::rendering_loop() {
 		}
 		
 		tiny3d_Project3D();
-
+		render_pipeline(&gamepad_info, &gamepad);
 
         for (size_t i = 0; i < sizeof(cube) / sizeof(vertices); i++) {
-			render_pipeline(i, &gamepad_info, &gamepad);
 			
-			tiny3d_VertexPos(cube[i].x - x_mov, cube[i].y, cube[i].z);
+			tiny3d_VertexPos(cube[i].x - x_position_camera, cube[i].y, cube[i].z);
             tiny3d_VertexColor(cube[i].color);
 		}
 
@@ -56,7 +63,7 @@ void Renderer::rendering_loop() {
 	}
 }
 
-void Renderer::render_pipeline(size_t index, padInfo* pad_info, padData* pad_data) {
+void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
 
 	    sysUtilCheckCallback();
     	ioPadGetInfo(pad_info);
@@ -65,23 +72,21 @@ void Renderer::render_pipeline(size_t index, padInfo* pad_info, padData* pad_dat
 			ioPadGetData(0, pad_data);
 			pad.getControl(pad_data, &mov);
 
-			// Pitch = vertical and yaw = horizontal -> right stick movement
-			VECTOR direction;
-			direction.x = cos(mov.yaw) * cos(mov.pitch);
-			direction.y = 				 sin(mov.pitch);
-			direction.z = sin(mov.yaw) * cos(mov.pitch);
-			VectorNormalize(&direction);
-
-			cameraFront = direction;
+			// Pitch and yaw
+			cameraFront.x = cos(mov.yaw) * cos(mov.pitch);
+			cameraFront.y = 			   sin(mov.pitch);
+			cameraFront.z = sin(mov.yaw) * cos(mov.pitch);
+			VectorNormalize(&cameraFront);
 
 			// For horizontal movement
 			VectorCrossProduct(&cameraFront, &up);
 			VectorNormalize(&cameraFront);
-			VectorMultiply(&cameraFront, -mov.position_x_axis);
+			VectorMultiply(&cameraFront, -1 * abs(mov.position_x_axis));
 			VectorAdd(&cameraFront, &cameraPos);
+
 			
 			MATRIX mat = MakeLookAtMatrix(cameraPos, cameraFront, up);
-
+			mat = MatrixMultiply(mat, rot_horz);
 			tiny3d_SetProjectionMatrix(&mat);
 			
 			// Scale according to the vertical position of the left stick 

@@ -10,7 +10,7 @@ class Renderer {
         Renderer();
 
         void rendering_loop();
-        void render_pipeline(size_t index, padInfo* pad_info, padData* pad);
+        void render_pipeline(padInfo* pad_info, padData* pad);
 
     private:       
         VECTOR cameraPos = {.0f, .0f, 3.0f};    // Camera's position
