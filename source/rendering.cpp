@@ -65,6 +65,14 @@ void Renderer::render_pipeline(size_t index, padInfo* pad_info, padData* pad_dat
 			ioPadGetData(0, pad_data);
 			pad.getControl(pad_data, &mov);
 
+			// Pitch = vertical and yaw = horizontal -> right stick movement
+			VECTOR direction;
+			direction.x = cos(mov.yaw) * cos(mov.pitch);
+			direction.y = 				 sin(mov.pitch);
+			direction.z = sin(mov.yaw) * cos(mov.pitch);
+			VectorNormalize(&direction);
+
+			cameraFront = direction;
 
 			// For horizontal movement
 			VectorCrossProduct(&cameraFront, &up);

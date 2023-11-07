@@ -13,8 +13,8 @@ typedef struct {
 	padInfo gamepad_info;
 
 	// Renaming all variable necessary
-	f32 direction_vertical;
-	f32 direction_horizontal;
+	f32 pitch;
+	f32 yaw;
 	f32 position_z_axis;
 	f32 position_x_axis;
 } moveData;
