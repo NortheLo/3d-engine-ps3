@@ -30,7 +30,7 @@ void Renderer::rendering_loop() {
 	f32 x_mov = 0.f;
 
 	while (true) {
-		x_mov *= -10 * pad.normalizeAnalogSticks((f32) gamepad.ANA_L_H);
+		x_mov = 10 * pad.normalizeAnalogSticks((f32) gamepad.ANA_L_H);
 
 		tiny3d_Clear(0xff000000, TINY3D_CLEAR_ALL);
 
@@ -46,7 +46,7 @@ void Renderer::rendering_loop() {
         for (size_t i = 0; i < sizeof(cube) / sizeof(vertices); i++) {
 			render_pipeline(i, &gamepad_info, &gamepad);
 			
-			tiny3d_VertexPos(cube[i].x + x_mov, cube[i].y, cube[i].z);
+			tiny3d_VertexPos(cube[i].x - x_mov, cube[i].y, cube[i].z);
             tiny3d_VertexColor(cube[i].color);
 		}
 
@@ -69,7 +69,7 @@ void Renderer::render_pipeline(size_t index, padInfo* pad_info, padData* pad_dat
 			// For horizontal movement
 			VectorCrossProduct(&cameraFront, &up);
 			VectorNormalize(&cameraFront);
-			VectorMultiply(&cameraFront, mov.position_x_axis);
+			VectorMultiply(&cameraFront, -mov.position_x_axis);
 			VectorAdd(&cameraFront, &cameraPos);
 			
 			MATRIX mat = MakeLookAtMatrix(cameraPos, cameraFront, up);
