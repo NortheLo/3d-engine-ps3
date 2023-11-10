@@ -25,7 +25,7 @@ void Pad::getControl(padData* pad, moveData* mov) {
 		mov->position_x_axis = 0.001f;
 	}
 	// r stick horizontal; rot y axis
-	mov->yaw							= M_PI * normalizeAnalogSticks((f32) pad->ANA_R_H);
+	mov->yaw							= normalizeAnalogSticks((f32) pad->ANA_R_H);
 	// r stick vertical; rot x axis
 	mov->pitch 							= normalizeAnalogSticks((f32) pad->ANA_R_V);
 }
