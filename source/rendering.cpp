@@ -26,6 +26,8 @@ Renderer::Renderer() {
 	TO-DO:
 	- Try to rotate the cube around the camera
 	- Fix to see sides by going to the right/left
+	- Think of a data structure to hold objects
+	- How to render several objects
 */
 
 void Renderer::rendering_loop() {
