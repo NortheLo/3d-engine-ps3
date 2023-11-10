@@ -24,9 +24,8 @@ Renderer::Renderer() {
 
 /* 
 	TO-DO:
-	- Fix by constant l v stick position that the object keeps moving
+	- Try to rotate the cube around the camera
 	- Fix to see sides by going to the right/left
-	- Fix yaw
 */
 
 void Renderer::rendering_loop() {
@@ -34,11 +33,11 @@ void Renderer::rendering_loop() {
 	padData gamepad;
 	padInfo gamepad_info;
 	ioPadInit(2);
-	f32 x_position_camera = 0.f;
+
+	f32 t = 0.0f;
 
 	while (true) {
-		x_position_camera += 0.1f * pad.normalizeAnalogSticks((f32) gamepad.ANA_L_H);
-
+		
 		tiny3d_Clear(0xff000000, TINY3D_CLEAR_ALL);
 
         int err_poly = tiny3d_SetPolygon(TINY3D_POLYGON);
@@ -50,15 +49,16 @@ void Renderer::rendering_loop() {
 		tiny3d_Project3D();
 		render_pipeline(&gamepad_info, &gamepad);
 
-        for (size_t i = 0; i < sizeof(cube) / sizeof(vertices); i++) {
+        for (auto &elem : cube) {
 			
-			tiny3d_VertexPos(cube[i].x - x_position_camera, cube[i].y, cube[i].z);
-            tiny3d_VertexColor(cube[i].color);
+			tiny3d_VertexPos(elem.x - mov.position_x_axis, elem.y, elem.z);
+            tiny3d_VertexColor(elem.color);
 		}
 
 		tiny3d_End();
 
 		tiny3d_Flip();
+		t += 0.1f;
 	}
 }
 
