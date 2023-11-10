@@ -95,7 +95,7 @@ VECTOR Renderer::Position(VECTOR* cameraPosition, VECTOR* cameraTarget) {
 
 VECTOR Renderer::Direction(VECTOR* cameraFront) {
 	// Pitch and yaw
-	cameraFront->x = cos(mov.yaw) * cos(mov.pitch);
+	cameraFront->x = 2 * sin(mov.yaw) * (cos(mov.yaw) * cos(mov.pitch) - cos(mov.pitch));
 	cameraFront->y = 			    sin(mov.pitch);
 	cameraFront->z = sin(mov.yaw) * cos(mov.pitch);
 	VectorNormalize(cameraFront);
