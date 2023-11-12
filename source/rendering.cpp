@@ -28,6 +28,7 @@ Renderer::Renderer() {
 	- Fix to see sides by going to the right/left
 	- Think of a data structure to hold objects
 	- How to render several objects
+	- Load texture 
 */
 
 void Renderer::rendering_loop() {
