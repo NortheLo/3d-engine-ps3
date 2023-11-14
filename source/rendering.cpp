@@ -24,8 +24,7 @@ Renderer::Renderer() {
 
 /* 
 	TO-DO:
-	- Try to rotate the cube around the camera
-	- Fix to see sides by going to the right/left
+	- Fix resetting of position
 	- Think of a data structure to hold objects
 	- How to render several objects
 	- Load texture 
@@ -40,7 +39,6 @@ void Renderer::rendering_loop() {
 	f32 t = 0.0f;
 
 	while (true) {
-		
 		tiny3d_Clear(0xff000000, TINY3D_CLEAR_ALL);
 
         int err_poly = tiny3d_SetPolygon(TINY3D_POLYGON);
@@ -54,7 +52,7 @@ void Renderer::rendering_loop() {
 
         for (auto &elem : cube) {
 			
-			tiny3d_VertexPos(elem.x - mov.position_x_axis, elem.y, elem.z);
+			tiny3d_VertexPos(elem.x, elem.y, elem.z);
             tiny3d_VertexColor(elem.color);
 		}
 
@@ -74,42 +72,17 @@ void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
 			ioPadGetData(0, pad_data);
 			pad.getControl(pad_data, &mov);
 
-			cameraFront = Position(&cameraPos, &cameraFront);
-			cameraFront = Direction(&cameraFront);
-			
-			MATRIX mat = MakeLookAtMatrix(cameraPos, cameraFront, up);
-			tiny3d_SetProjectionMatrix(&mat);
-			
-			MATRIX MVP = Scale();
+			MATRIX projectionMatrix = MatrixProjPerspective(90.f, 1920.f / 1080.f, 0.00125, 300.f);
+			tiny3d_SetProjectionMatrix(&projectionMatrix);
 
-			tiny3d_SetMatrixModelView(&MVP);
+			modelView = MatrixTranslation(10. * mov.position_x_axis, 0, -100. * mov.position_z_axis);
+			MATRIX yaw = MatrixRotationY(mov.yaw);
+			MATRIX pitch = MatrixRotationX(mov.pitch);
+			modelView = MatrixMultiply(modelView, MatrixMultiply(yaw, pitch));
+
+
+			// when does this get used????
+			//MATRIX viewMatrix = MakeLookAtMatrix(cameraPos, cameraFront, up);
+			tiny3d_SetMatrixModelView(&modelView);
 		}
-}
-
-VECTOR Renderer::Position(VECTOR* cameraPosition, VECTOR* cameraTarget) {
-	// For horizontal movement
-	VectorCrossProduct(cameraTarget, &up);
-	VectorNormalize(cameraTarget);
-	VectorMultiply(cameraTarget, -1 * abs(mov.position_x_axis));
-	VectorAdd(cameraTarget, cameraPosition);
-
-	return *cameraTarget;
-}
-
-VECTOR Renderer::Direction(VECTOR* cameraFront) {
-	// Pitch and yaw
-	cameraFront->x = 2 * sin(mov.yaw) * (cos(mov.yaw) * cos(mov.pitch) - cos(mov.pitch));
-	cameraFront->y = 			    -sin(mov.pitch);
-	cameraFront->z = sin(mov.yaw) * cos(mov.pitch);
-	VectorNormalize(cameraFront);
-
-	return *cameraFront;
-}
-
-MATRIX Renderer::Scale() {
-	// Scale according to the vertical position of the left stick 
-	MATRIX scale = MatrixScale(mov.position_z_axis, mov.position_z_axis, mov.position_z_axis);
-	MATRIX MVP = MatrixIdentity(); 
-	MVP = MatrixMultiply(MVP, scale);
-	return MVP;
 }
