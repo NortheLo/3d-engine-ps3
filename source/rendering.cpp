@@ -17,14 +17,11 @@ Renderer::Renderer() {
 	if (err < 0) {
 		perror("Couldnt init Tiny-3D");
 	}
-
-	// starting value
-	mov.position_z_axis = 0.1;
 }
 
 /* 
 	TO-DO:
-	- Fix resetting of position
+	
 	- Think of a data structure to hold objects
 	- How to render several objects
 	- Load texture 
