@@ -36,8 +36,6 @@ void Renderer::rendering_loop() {
 	padInfo gamepad_info;
 	ioPadInit(2);
 
-	f32 t = 0.0f;
-
 	while (true) {
 		tiny3d_Clear(0xff000000, TINY3D_CLEAR_ALL);
 
@@ -59,7 +57,6 @@ void Renderer::rendering_loop() {
 		tiny3d_End();
 
 		tiny3d_Flip();
-		t += 0.1f;
 	}
 }
 
@@ -72,12 +69,18 @@ void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
 			ioPadGetData(0, pad_data);
 			pad.getControl(pad_data, &mov);
 
+			position.x += mov.position_x_axis;
+			position.z += mov.position_z_axis;
+
+			rotation.x -= 0.1f * mov.pitch;
+			rotation.y += 0.1f * mov.yaw; 
+
 			MATRIX projectionMatrix = MatrixProjPerspective(90.f, 1920.f / 1080.f, 0.00125, 300.f);
 			tiny3d_SetProjectionMatrix(&projectionMatrix);
 
-			modelView = MatrixTranslation(10. * mov.position_x_axis, 0, -100. * mov.position_z_axis);
-			MATRIX yaw = MatrixRotationY(mov.yaw);
-			MATRIX pitch = MatrixRotationX(mov.pitch);
+			modelView = MatrixTranslation(position.x, 0, position.z);
+			MATRIX yaw = MatrixRotationY(rotation.y);
+			MATRIX pitch = MatrixRotationX(rotation.x);
 			modelView = MatrixMultiply(modelView, MatrixMultiply(yaw, pitch));
 
 

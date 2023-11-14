@@ -15,15 +15,8 @@ f32 Pad::normalizeAnalogSticks(f32 raw) {
 */
 void Pad::getControl(padData* pad, moveData* mov) {
 	mov->position_z_axis				= normalizeAnalogSticks((f32) pad->ANA_L_V);
-	// prevent mirroring at the x axis when crossing 0 
-	if (mov->position_z_axis > 0) {
-		mov->position_z_axis = 0.f;
-	}
 	mov->position_x_axis 				= normalizeAnalogSticks((f32) pad->ANA_L_H);
-	// quick fix for object disappearing when stick is centered -> 0.0
-	if (mov->position_x_axis == 0.f) {
-		mov->position_x_axis = 0.001f;
-	}
+
 	// r stick horizontal; rot y axis
 	mov->yaw							= normalizeAnalogSticks((f32) pad->ANA_R_H);
 	// r stick vertical; rot x axis

@@ -15,5 +15,6 @@ class Renderer {
     private:
         MATRIX modelView;
         Pad pad;
-
+        VECTOR position = {0.f, 0.f, 0.f};
+        VECTOR rotation = {0.f, 0.f, 0.f};
 };
