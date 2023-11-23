@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <memory>
 #include <ppu-types.h>
 #include <sys/socket.h>
 
@@ -15,13 +16,13 @@
 Renderer::Renderer() {
 	int err = tiny3d_Init(TINY3D_Z16 | 4 * 1024 * 1024);
 	if (err < 0) {
-		perror("Couldnt init Tiny-3D");
+		perror("Couldn't init Tiny-3D");
 	}
 }
 
 /* 
 	TO-DO:
-	
+	- fix position when going "off" grid
 	- Think of a data structure to hold objects
 	- How to render several objects
 	- Load texture 
@@ -58,31 +59,35 @@ void Renderer::rendering_loop() {
 }
 
 void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
+	// Get data from the gamepad
+	sysUtilCheckCallback();
+	ioPadGetInfo(pad_info);
 
-	    sysUtilCheckCallback();
-    	ioPadGetInfo(pad_info);
+	if(pad_info->status)  {
+		ioPadGetData(0, pad_data);
+		pad.getControl(pad_data, &mov);
 
-        if(pad_info->status)  {
-			ioPadGetData(0, pad_data);
-			pad.getControl(pad_data, &mov);
+		MATRIX projectionMatrix = MatrixProjPerspective(90.f, 1920.f / 1080.f, 0.00125, 300.f);
+		tiny3d_SetProjectionMatrix(&projectionMatrix);
+		MATRIX viewMatrix = MakeLookAtMatrix(pos, target, up);
 
-			position.x += mov.position_x_axis;
-			position.z += mov.position_z_axis;
+		position.z += mov.position_z_axis;
+		position.x += mov.position_x_axis;
+		MATRIX modelMatrix = MatrixTranslation(position.x, 0, position.z);
 
-			rotation.x -= 0.1f * mov.pitch;
-			rotation.y += 0.1f * mov.yaw; 
+		rotation.x += 0.1f * mov.pitch;
+		rotation.y += 0.1f * mov.yaw;
+		MATRIX yaw   = MatrixRotationY(rotation.y);
+		MATRIX pitch = MatrixRotationX(rotation.x);
 
-			MATRIX projectionMatrix = MatrixProjPerspective(90.f, 1920.f / 1080.f, 0.00125, 300.f);
-			tiny3d_SetProjectionMatrix(&projectionMatrix);
+		modelMatrix = MatrixMultiply(modelMatrix, MatrixMultiply(yaw, pitch));
 
-			modelView = MatrixTranslation(position.x, 0, position.z);
-			MATRIX yaw = MatrixRotationY(rotation.y);
-			MATRIX pitch = MatrixRotationX(rotation.x);
-			modelView = MatrixMultiply(modelView, MatrixMultiply(yaw, pitch));
+		MATRIX scaled = MatrixScale(1.f, 1.f, 1.f);
+		modelMatrix = MatrixMultiply(scaled, modelMatrix);
 
+		MATRIX MVP = MatrixMultiply(viewMatrix, modelMatrix);
+		MVP = MatrixMultiply(projectionMatrix, MVP);
 
-			// when does this get used????
-			//MATRIX viewMatrix = MakeLookAtMatrix(cameraPos, cameraFront, up);
-			tiny3d_SetMatrixModelView(&modelView);
-		}
+		tiny3d_SetMatrixModelView(&MVP);
+	}
 }
