@@ -37,6 +37,8 @@ void Renderer::rendering_loop() {
 	while (true) {
 		tiny3d_Clear(0xff000000, TINY3D_CLEAR_ALL);
 
+		render_pipeline(&gamepad_info, &gamepad);
+
         int err_poly = tiny3d_SetPolygon(TINY3D_POLYGON);
 		if (err_poly == TINY3D_BUSY || err_poly == TINY3D_INVALID) {
 			fprintf(stderr, "Error in setting up polygon %d\n", err_poly);
@@ -44,7 +46,6 @@ void Renderer::rendering_loop() {
 		}
 		
 		tiny3d_Project3D();
-		render_pipeline(&gamepad_info, &gamepad);
 
         for (auto &elem : cube) {
 			
@@ -67,27 +68,25 @@ void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
 		ioPadGetData(0, pad_data);
 		pad.getControl(pad_data, &mov);
 
-		MATRIX projectionMatrix = MatrixProjPerspective(90.f, 1920.f / 1080.f, 0.00125, 300.f);
-		tiny3d_SetProjectionMatrix(&projectionMatrix);
 		MATRIX viewMatrix = MakeLookAtMatrix(pos, target, up);
 
-		position.z += mov.position_z_axis;
-		position.x += mov.position_x_axis;
+		position.z += 1.f *  mov.position_z_axis;
+		position.x -= 1.f * mov.position_x_axis;
 		MATRIX modelMatrix = MatrixTranslation(position.x, 0, position.z);
-
+		
 		rotation.x += 0.1f * mov.pitch;
 		rotation.y += 0.1f * mov.yaw;
 		MATRIX yaw   = MatrixRotationY(rotation.y);
 		MATRIX pitch = MatrixRotationX(rotation.x);
 
 		modelMatrix = MatrixMultiply(modelMatrix, MatrixMultiply(yaw, pitch));
+		MATRIX MVP = MatrixMultiply(modelMatrix, viewMatrix);
 
-		MATRIX scaled = MatrixScale(1.f, 1.f, 1.f);
-		modelMatrix = MatrixMultiply(scaled, modelMatrix);
+		//MVP = MatrixMultiply(projectionMatrix, MVP);
 
-		MATRIX MVP = MatrixMultiply(viewMatrix, modelMatrix);
-		MVP = MatrixMultiply(projectionMatrix, MVP);
 
+		tiny3d_SetProjectionMatrix(&projectionMatrix);
 		tiny3d_SetMatrixModelView(&MVP);
+
 	}
 }
