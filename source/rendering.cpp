@@ -13,20 +13,19 @@
 #include "../include/map.hpp"
 #include "../include/matrix2.h"
 
+/* 
+	TO-DO:
+	- Think of a data structure to hold objects
+	- How to render several objects
+	- Load texture 
+*/
+
 Renderer::Renderer() {
 	int err = tiny3d_Init(TINY3D_Z16 | 4 * 1024 * 1024);
 	if (err < 0) {
 		perror("Couldn't init Tiny-3D");
 	}
 }
-
-/* 
-	TO-DO:
-	- fix position when going "off" grid
-	- Think of a data structure to hold objects
-	- How to render several objects
-	- Load texture 
-*/
 
 void Renderer::rendering_loop() {
 
@@ -48,7 +47,6 @@ void Renderer::rendering_loop() {
 		tiny3d_Project3D();
 
         for (auto &elem : cube) {
-			
 			tiny3d_VertexPos(elem.x, elem.y, elem.z);
             tiny3d_VertexColor(elem.color);
 		}
@@ -71,16 +69,16 @@ void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
 		MATRIX ViewMatrix = getViewMatrix();
 		MATRIX ModelMatrix = MatrixIdentity();
 		MATRIX MVP = MatrixMultiply(ModelMatrix, ViewMatrix);
-		MVP = MatrixMultiply(MVP, ProjectionMatrix);
+		//MVP = MatrixMultiply(MVP, ProjectionMatrix);
 
 		tiny3d_SetProjectionMatrix(&ProjectionMatrix);
 		tiny3d_SetMatrixModelView(&MVP);
-	}
+	}	
 }
 
 MATRIX Renderer::getViewMatrix() {
-		position.z +=   mov.position_z_axis;
-		position.x -=   mov.position_x_axis;
+		position.z += mov.position_z_axis;
+		position.x -= mov.position_x_axis;
 
 		rotation.y += 0.1f * mov.pitch;
 		rotation.x += 0.1f * mov.yaw;
