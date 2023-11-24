@@ -68,25 +68,44 @@ void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
 		ioPadGetData(0, pad_data);
 		pad.getControl(pad_data, &mov);
 
-		MATRIX viewMatrix = MakeLookAtMatrix(pos, target, up);
+		MATRIX ViewMatrix = getViewMatrix();
+		MATRIX ModelMatrix = MatrixIdentity();
+		MATRIX MVP = MatrixMultiply(ModelMatrix, ViewMatrix);
+		MVP = MatrixMultiply(MVP, ProjectionMatrix);
 
-		position.z += 1.f *  mov.position_z_axis;
-		position.x -= 1.f * mov.position_x_axis;
-		MATRIX modelMatrix = MatrixTranslation(position.x, 0, position.z);
-		
-		rotation.x += 0.1f * mov.pitch;
-		rotation.y += 0.1f * mov.yaw;
-		MATRIX yaw   = MatrixRotationY(rotation.y);
-		MATRIX pitch = MatrixRotationX(rotation.x);
-
-		modelMatrix = MatrixMultiply(modelMatrix, MatrixMultiply(yaw, pitch));
-		MATRIX MVP = MatrixMultiply(modelMatrix, viewMatrix);
-
-		//MVP = MatrixMultiply(projectionMatrix, MVP);
-
-
-		tiny3d_SetProjectionMatrix(&projectionMatrix);
+		tiny3d_SetProjectionMatrix(&ProjectionMatrix);
 		tiny3d_SetMatrixModelView(&MVP);
-
 	}
+}
+
+MATRIX Renderer::getViewMatrix() {
+		position.z +=   mov.position_z_axis;
+		position.x -=   mov.position_x_axis;
+
+		rotation.y += 0.1f * mov.pitch;
+		rotation.x += 0.1f * mov.yaw;
+
+		VECTOR direction = {
+			cos(rotation.y) * sin(rotation.x), 
+			sin(rotation.y),
+			cos(rotation.y) * cos(rotation.x)
+		};
+
+		VECTOR posTarget = {
+			position.x + direction.x,
+			position.y + direction.y,
+			position.z + direction.z
+		};
+
+		VECTOR right = {
+			(float) sin(rotation.x - M_PI / 2), 
+			0,
+			(float) cos(rotation.x - M_PI / 2)
+		};
+
+		up = VectorCrossProduct(&right, &direction);
+
+		MATRIX ViewMatrix = MakeLookAtMatrix(position, posTarget, up);
+
+		return ViewMatrix;
 }
