@@ -32,7 +32,7 @@ void Renderer::rendering_loop() {
 	padData gamepad;
 	padInfo gamepad_info;
 	ioPadInit(2);
-
+	
 	while (true) {
 		tiny3d_Clear(0xff000000, TINY3D_CLEAR_ALL);
 
@@ -68,8 +68,8 @@ void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
 
 		MATRIX ViewMatrix = getViewMatrix();
 		MATRIX ModelMatrix = MatrixIdentity();
-		MATRIX MVP = MatrixMultiply(ModelMatrix, ViewMatrix);
-		//MVP = MatrixMultiply(MVP, ProjectionMatrix);
+		MATRIX MVP = MatrixMultiply(ViewMatrix, ModelMatrix);
+		MVP = MatrixMultiply(MVP, ProjectionMatrix);
 
 		tiny3d_SetProjectionMatrix(&ProjectionMatrix);
 		tiny3d_SetMatrixModelView(&MVP);
@@ -78,7 +78,7 @@ void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
 
 MATRIX Renderer::getViewMatrix() {
 		position.z += mov.position_z_axis;
-		position.x -= mov.position_x_axis;
+		position.x += mov.position_x_axis;
 
 		rotation.y += 0.1f * mov.pitch;
 		rotation.x += 0.1f * mov.yaw;
