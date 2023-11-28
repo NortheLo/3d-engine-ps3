@@ -69,8 +69,7 @@ void Renderer::render_pipeline(padInfo* pad_info, padData* pad_data) {
 		MATRIX ViewMatrix = getViewMatrix();
 		MATRIX ModelMatrix = MatrixIdentity();
 		MATRIX MVP = MatrixMultiply(ViewMatrix, ModelMatrix);
-		MVP = MatrixMultiply(MVP, ProjectionMatrix);
-
+		
 		tiny3d_SetProjectionMatrix(&ProjectionMatrix);
 		tiny3d_SetMatrixModelView(&MVP);
 	}	
