@@ -462,15 +462,19 @@ void drawFrame(cam* camDat) {
 		rsxSetViewportClip(context, i, display_width, display_height);
 
 
-	// jdh approach
-	Vector3 direction = Vector3(camDat->pos_x, 0.f, camDat->pos_z);
-	Vector3 forward = Vector3(sinf(camDat->angle_y), 0, cosf(camDat->angle_x));
+
+	// calc the new eye_pos position with forward and right vector
+	Vector3 direction = Vector3(0.f, 0.f, 0.f);
+	Vector3 forward = Vector3(sinf(camDat->angle_y), 0,  cosf(camDat->angle_y));
 	Vector3 tmp_right = Vector3(cross((Vector3) {0.f, 1.f, 0.f}, forward));
-	direction += forward + tmp_right;
+	
+	direction += camDat->pos_z * forward + camDat->pos_x * tmp_right;
 
-	eye_pos = (Point3) (direction); //+  (Vector3) eye_pos);
+	eye_pos = (Point3) direction;
+	eye_pos = (Point3) normalize((Vector3) eye_pos);
 
 
+	// calc the new eye_dir position
 	Vector3 tmp_eye = Vector3(
 		cosf(camDat->angle_x) * sinf(camDat->angle_y),
         sinf(camDat->angle_x),
@@ -480,10 +484,9 @@ void drawFrame(cam* camDat) {
 
 	Vector3 right = cross((Vector3) {0.f, 1.f, 0.f}, (Vector3) eye_dir);
 	Vector3 up = cross((Vector3) eye_dir, right);
-	Vector3 dir = direction + (Vector3) eye_dir;
 
+	Vector3 dir = (Vector3) direction + (Vector3) eye_dir;
 	viewMatrix = Matrix4::lookAt((Point3) direction, (Point3) dir, up);
-	modelViewMatrix = viewMatrix;
 
 	rotX = Matrix4::rotationX(DEGTORAD(0)); //camDat->angle_x));
 	rotY = Matrix4::rotationY(DEGTORAD(0)); // camDat->angle_y));
@@ -529,8 +532,6 @@ void drawFrame(cam* camDat) {
 	rsxDrawIndexArray(context, GCM_TYPE_TRIANGLES, offset, mesh->cnt_indices, GCM_INDEX_TYPE_16B, GCM_LOCATION_RSX);
 }
 
-
-
 int main()
 {
 	cam cameraSticks = {0.f, 0.f, 0.f, 0.f};
@@ -568,8 +569,8 @@ int main()
 
 				cameraSticks.pos_x -= 0.1 * normalizeAnalogSticks((f32) paddata.ANA_L_V);
 				cameraSticks.pos_z -= 0.1 * normalizeAnalogSticks((f32) paddata.ANA_L_H);
-				cameraSticks.angle_y -= 0.2 * normalizeAnalogSticks((f32) paddata.ANA_R_H);
-				cameraSticks.angle_x += 0.2 * normalizeAnalogSticks((f32) paddata.ANA_R_V);
+				cameraSticks.angle_y -= 0.1 * normalizeAnalogSticks((f32) paddata.ANA_R_H);
+				cameraSticks.angle_x += 0.1 * normalizeAnalogSticks((f32) paddata.ANA_R_V);
 
 				if(paddata.BTN_CROSS)
 					goto done;
@@ -579,7 +580,7 @@ int main()
 		
 		drawFrame(&cameraSticks);
 
-		P = transpose(Matrix4::perspective(DEGTORAD(90.f),aspect_ratio,1.0f,3000.0f));
+		P = transpose(Matrix4::perspective(DEGTORAD(90.f), aspect_ratio, 1.0f, 3000.0f));
 
 		flip();
 	}
