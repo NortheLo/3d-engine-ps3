@@ -1,2 +1,5 @@
 *.self
 *.elf
+*.o
+*.d
+*.map
