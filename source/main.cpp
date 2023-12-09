@@ -439,7 +439,7 @@ void drawFrame(cam* camDat) {
 	u32 offset, color = 0;
 	Matrix4 rotX,rotY;
 	Vector4 objEyePos, objLightPos;
-	Matrix4 viewMatrix,modelMatrix,modelMatrixIT,modelViewMatrix;
+	Matrix4 viewMatrix, modelMatrix, modelMatrixIT, modelViewMatrix;
 	Point3 lightPos = Point3(250.0f, 150.0f, 150.0f);
 	f32 globalAmbientColor[3] = {0.1f, 0.1f, 0.1f};
 	f32 lightColor[3] = {0.95f, 0.95f, 0.95f};
@@ -468,7 +468,7 @@ void drawFrame(cam* camDat) {
 	Vector3 tmp_right = Vector3(cross((Vector3) {0.f, 1.f, 0.f}, forward));
 	direction += forward + tmp_right;
 
-	eye_pos = (Point3) (direction +  (Vector3) eye_pos);
+	eye_pos = (Point3) (direction); //+  (Vector3) eye_pos);
 
 
 	Vector3 tmp_eye = Vector3(
@@ -494,8 +494,8 @@ void drawFrame(cam* camDat) {
 	objEyePos = modelMatrixIT * eye_pos;
 	objLightPos = modelMatrixIT * lightPos;
 
-	rsxAddressToOffset(&mesh->vertices[0].pos,&offset);
-	rsxBindVertexArrayAttrib(context,GCM_VERTEX_ATTRIB_POS,0,offset,sizeof(S3DVertex),3,GCM_VERTEX_DATA_TYPE_F32,GCM_LOCATION_RSX);
+	rsxAddressToOffset(&mesh->vertices[0].pos, &offset);
+	rsxBindVertexArrayAttrib(context, GCM_VERTEX_ATTRIB_POS, 0, offset, sizeof(S3DVertex), 3, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
 
 	// rsxAddressToOffset(&mesh->vertices[0].nrm,&offset);
 	// rsxBindVertexArrayAttrib(context,GCM_VERTEX_ATTRIB_NORMAL,0,offset,sizeof(S3DVertex),3,GCM_VERTEX_DATA_TYPE_F32,GCM_LOCATION_RSX);
@@ -503,20 +503,20 @@ void drawFrame(cam* camDat) {
 	// rsxAddressToOffset(&mesh->vertices[0].u,&offset);
 	// rsxBindVertexArrayAttrib(context,GCM_VERTEX_ATTRIB_TEX0,0,offset,sizeof(S3DVertex),2,GCM_VERTEX_DATA_TYPE_F32,GCM_LOCATION_RSX);
 
-	rsxLoadVertexProgram(context,vpo,vp_ucode);
-	rsxSetVertexProgramParameter(context,vpo,projMatrix,(float*)&P);
-	rsxSetVertexProgramParameter(context,vpo,mvMatrix,(float*)&modelViewMatrix);
+	rsxLoadVertexProgram(context, vpo,vp_ucode);
+	rsxSetVertexProgramParameter(context, vpo, projMatrix, (float*) &P);
+	rsxSetVertexProgramParameter(context, vpo, mvMatrix, (float*) &modelViewMatrix);
 
-	rsxSetFragmentProgramParameter(context,fpo,eyePosition,(float*)&objEyePos,fp_offset,GCM_LOCATION_RSX);
-	rsxSetFragmentProgramParameter(context,fpo,globalAmbient,globalAmbientColor,fp_offset,GCM_LOCATION_RSX);
-	rsxSetFragmentProgramParameter(context,fpo,litPosition,(float*)&objLightPos,fp_offset,GCM_LOCATION_RSX);
-	rsxSetFragmentProgramParameter(context,fpo,litColor,lightColor,fp_offset,GCM_LOCATION_RSX);
-	rsxSetFragmentProgramParameter(context,fpo,spec,&shininess,fp_offset,GCM_LOCATION_RSX);
+	rsxSetFragmentProgramParameter(context, fpo, eyePosition, (float*) &objEyePos, fp_offset, GCM_LOCATION_RSX);
+	rsxSetFragmentProgramParameter(context, fpo, globalAmbient, globalAmbientColor, fp_offset, GCM_LOCATION_RSX);
+	rsxSetFragmentProgramParameter(context, fpo, litPosition, (float*) &objLightPos, fp_offset, GCM_LOCATION_RSX);
+	rsxSetFragmentProgramParameter(context, fpo, litColor, lightColor, fp_offset, GCM_LOCATION_RSX);
+	rsxSetFragmentProgramParameter(context, fpo, spec, &shininess, fp_offset, GCM_LOCATION_RSX);
 
-	rsxSetFragmentProgramParameter(context,fpo,Kd,materialColorDiffuse,fp_offset,GCM_LOCATION_RSX);
-	rsxSetFragmentProgramParameter(context,fpo,Ks,materialColorSpecular,fp_offset,GCM_LOCATION_RSX);
+	rsxSetFragmentProgramParameter(context, fpo, Kd, materialColorDiffuse, fp_offset, GCM_LOCATION_RSX);
+	rsxSetFragmentProgramParameter(context, fpo, Ks, materialColorSpecular, fp_offset, GCM_LOCATION_RSX);
 
-	rsxLoadFragmentProgramLocation(context,fpo,fp_offset,GCM_LOCATION_RSX);
+	rsxLoadFragmentProgramLocation(context, fpo, fp_offset, GCM_LOCATION_RSX);
 
 	rsxSetUserClipPlaneControl(context,GCM_USER_CLIP_PLANE_DISABLE,
 									   GCM_USER_CLIP_PLANE_DISABLE,
@@ -525,8 +525,8 @@ void drawFrame(cam* camDat) {
 									   GCM_USER_CLIP_PLANE_DISABLE,
 									   GCM_USER_CLIP_PLANE_DISABLE);
 
-	rsxAddressToOffset(&mesh->indices[0],&offset);
-	rsxDrawIndexArray(context,GCM_TYPE_TRIANGLES,offset,mesh->cnt_indices,GCM_INDEX_TYPE_16B,GCM_LOCATION_RSX);
+	rsxAddressToOffset(&mesh->indices[0], &offset);
+	rsxDrawIndexArray(context, GCM_TYPE_TRIANGLES, offset, mesh->cnt_indices, GCM_INDEX_TYPE_16B, GCM_LOCATION_RSX);
 }
 
 
