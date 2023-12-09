@@ -1,0 +1,1 @@
+make clean && make -j 32 && /home/louis/Documents/ps3/rpcs3_build/bin/rpcs3 3d-engine-ps3.self
