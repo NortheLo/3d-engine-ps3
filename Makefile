@@ -7,17 +7,7 @@ ifeq ($(strip $(PSL1GHT)),)
 $(error "Please set PSL1GHT in your environment. export PSL1GHT=<path>")
 endif
 
-#---------------------------------------------------------------------------------
-#  TITLE, APPID, CONTENTID, ICON0 SFOXML before ppu_rules.
-#---------------------------------------------------------------------------------
-TITLE		:=	Hello World
-APPID		:=	SPHERES01
-CONTENTID	:=	UP0001-$(APPID)_00-0000000000000000
-
 include $(PSL1GHT)/ppu_rules
-
-# aditional scetool flags (--self-ctrl-flags, --self-cap-flags...)
-SCETOOL_FLAGS	+=	
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -27,27 +17,28 @@ SCETOOL_FLAGS	+=
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source ../debugfont_renderer/source
 DATA		:=	data
-SHADERS		:=	shaders
-INCLUDES	:=	include
+SHADERS		:=	shaders ../debugfont_renderer/shaders
+INCLUDES	:=	include ../debugfont_renderer/include
 
-
-#---------------------------------------------------------------------------------
-# any extra libraries we wish to link with the project
-#---------------------------------------------------------------------------------
-LIBS		:=	-ltiny3d -lfont3d -lrsx -lsimdmath -lgcm_sys -lio -lsysutil -lrt -llv2 -lpngdec -lsysmodule -lm
-
+TITLE		:=	RSX Test - PSL1GHT
+APPID		:=	RSX00003
+CONTENTID	:=	UP0001-$(APPID)_00-0000000000000000
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS		=	-O2 -Wall -Wextra -mcpu=cell $(MACHDEP) $(INCLUDE)
+CFLAGS		=	-O2 -std=c++11 -Wall -Wextra -mcpu=cell -maltivec -mabi=altivec $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=	$(CFLAGS)
 
 LDFLAGS		=	$(MACHDEP) -Wl,-Map,$(notdir $@).map
 
+#---------------------------------------------------------------------------------
+# any extra libraries we wish to link with the project
+#---------------------------------------------------------------------------------
+LIBS	:=	-lsimdmath -lrsx -lgcm_sys -lio -lsysutil -lrt -llv2 -lm
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -79,7 +70,7 @@ CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 sFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.S)))
-BINFILES	:= $(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.bin)))
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 VCGFILES	:=	$(foreach dir,$(SHADERS),$(notdir $(wildcard $(dir)/*.vcg)))
 FCGFILES	:=	$(foreach dir,$(SHADERS),$(notdir $(wildcard $(dir)/*.fcg)))
 
@@ -107,17 +98,16 @@ export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
 export INCLUDE	:=	$(foreach dir,$(INCLUDES), -I$(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 					$(LIBPSL1GHT_INC) \
-					-I$(CURDIR)/$(BUILD) -I$(PORTLIBS)/include
+					-I$(CURDIR)/$(BUILD)
 
 #---------------------------------------------------------------------------------
 # build a list of library paths
 #---------------------------------------------------------------------------------
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib) \
-					$(LIBPSL1GHT_LIB) -L$(PORTLIBS)/lib
+					$(LIBPSL1GHT_LIB)
 
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
 .PHONY: $(BUILD) clean
-
 
 #---------------------------------------------------------------------------------
 $(BUILD):
@@ -125,13 +115,9 @@ $(BUILD):
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
-all:
-	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
-
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(OUTPUT).elf $(OUTPUT).fake.self $(OUTPUT).self EBOOT.BIN
+	@rm -fr $(BUILD) $(OUTPUT).elf $(OUTPUT).self
 
 #---------------------------------------------------------------------------------
 run:
@@ -141,12 +127,6 @@ run:
 pkg:	$(BUILD) $(OUTPUT).pkg
 
 #---------------------------------------------------------------------------------
-
-npdrm: $(BUILD)
-	@$(SELF_NPDRM) $(SCETOOL_FLAGS) --np-content-id=$(CONTENTID) --encrypt $(BUILDDIR)/$(basename $(notdir $(OUTPUT))).elf $(BUILDDIR)/../EBOOT.BIN
-
-#---------------------------------------------------------------------------------
-
 else
 
 DEPENDS	:=	$(OFILES:.o=.d)

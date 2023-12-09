@@ -10,6 +10,12 @@ typedef struct {
 	u32 color;
 } vertices;
 
+typedef struct {
+	float x;
+	float y;
+	float z;
+} vertices2;
+
 vertices cube[] = {
 	// Front face
 	{ -1.0f, -1.0f, -1.0f, 0xff000000 }, // Bottom left
@@ -48,40 +54,40 @@ vertices cube[] = {
 	{ -1.0f, -1.0f, 1.0f, 0xffff00ff }   // Back left
 };
 
-vertices cube2[] = {
+vertices2 cube2[] = {
     // Front face
-    { 1.0f, -1.0f, -1.0f, 0xff0000ff },  // Bottom left
-    { 3.0f, -1.0f, -1.0f, 0xff0000ff },  // Bottom right
-    { 3.0f, 1.0f, -1.0f, 0xff0000ff },   // Top right
-    { 1.0f, 1.0f, -1.0f, 0xff0000ff },   // Top left
+    { 1.0f, -1.0f, -1.0f},  // Bottom left
+    { 3.0f, -1.0f, -1.0f},  // Bottom right
+    { 3.0f, 1.0f, -1.0f},   // Top right
+    { 1.0f, 1.0f, -1.0f},   // Top left
 
     // Back face
-    { 1.0f, -1.0f, 1.0f, 0xffffff00 },   // Bottom left
-    { 3.0f, -1.0f, 1.0f, 0xffffff00 },   // Bottom right
-    { 3.0f, 1.0f, 1.0f, 0xffffff00 },    // Top right
-    { 1.0f, 1.0f, 1.0f, 0xffffff00 },    // Top left
+    { 1.0f, -1.0f, 1.0f},   // Bottom left
+    { 3.0f, -1.0f, 1.0f},   // Bottom right
+    { 3.0f, 1.0f, 1.0f},    // Top right
+    { 1.0f, 1.0f, 1.0f},    // Top left
 
     // Left face
-    { 1.0f, -1.0f, -1.0f, 0xff00ff00 },  // Bottom front
-    { 1.0f, 1.0f, -1.0f, 0xff00ff00 },   // Top front
-    { 1.0f, 1.0f, 1.0f, 0xff00ff00 },    // Top back
-    { 1.0f, -1.0f, 1.0f, 0xff00ff00 },   // Bottom back
+    { 1.0f, -1.0f, -1.0f},  // Bottom front
+    { 1.0f, 1.0f, -1.0f},   // Top front
+    { 1.0f, 1.0f, 1.0f},    // Top back
+    { 1.0f, -1.0f, 1.0f},   // Bottom back
 
     // Right face
-    { 3.0f, -1.0f, -1.0f, 0xffff00ff },  // Bottom front
-    { 3.0f, 1.0f, -1.0f, 0xffff00ff },   // Top front
-    { 3.0f, 1.0f, 1.0f, 0xffff00ff },    // Top back
-    { 3.0f, -1.0f, 1.0f, 0xffff00ff },   // Bottom back
+    { 3.0f, -1.0f, -1.0f},  // Bottom front
+    { 3.0f, 1.0f, -1.0f},   // Top front
+    { 3.0f, 1.0f, 1.0f},    // Top back
+    { 3.0f, -1.0f, 1.0f},   // Bottom back
 
     // Top face
-    { 1.0f, 1.0f, -1.0f, 0xff00ffff },   // Front left
-    { 3.0f, 1.0f, -1.0f, 0xff00ffff },   // Front right
-    { 3.0f, 1.0f, 1.0f, 0xff00ffff },    // Back right
-    { 1.0f, 1.0f, 1.0f, 0xff00ffff },    // Back left
+    { 1.0f, 1.0f, -1.0f},   // Front left
+    { 3.0f, 1.0f, -1.0f},   // Front right
+    { 3.0f, 1.0f, 1.0f},    // Back right
+    { 1.0f, 1.0f, 1.0f},    // Back left
 
     // Bottom face
-    { 1.0f, -1.0f, -1.0f, 0xffff0000 },  // Front left
-    { 3.0f, -1.0f, -1.0f, 0xffff0000 },  // Front right
-    { 3.0f, -1.0f, 1.0f, 0xffff0000 },   // Back right
-    { 1.0f, -1.0f, 1.0f, 0xffff0000 }    // Back left
+    { 1.0f, -1.0f, -1.0f},  // Front left
+    { 3.0f, -1.0f, -1.0f},  // Front right
+    { 3.0f, -1.0f, 1.0f},   // Back right
+    { 1.0f, -1.0f, 1.0f}    // Back left
 };
