@@ -4,6 +4,8 @@
         "array": "cpp",
         "string": "cpp",
         "string_view": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "algorithm": "cpp",
+        "system_error": "cpp"
     }
 }

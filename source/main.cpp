@@ -61,8 +61,6 @@ void *fp_ucode = NULL;
 rsxFragmentProgram *fpo =(rsxFragmentProgram*)diffuse_specular_shader_fpo;
 
 static Matrix4 P;
-static SMeshBuffer *sphere = NULL;
-static SMeshBuffer *donut = NULL;
 static SMeshBuffer *cube = NULL;
 
 SYS_PROCESS_PARAM(1001, 0x100000);
@@ -140,191 +138,6 @@ static SMeshBuffer* createCube(f32 size)
 		buffer->vertices[i].pos -= Vector3(0.5f,0.5f,0.5f);
 		buffer->vertices[i].pos *= size;
 	}
-
-	return buffer;
-}
-
-static SMeshBuffer* createDonut(f32 outerRadius,f32 innerRadius,u32 polyCntX,u32 polyCntY)
-{
-	u32 i,x,y,level;
-	SMeshBuffer *buffer = new SMeshBuffer();
-
-	if(polyCntX<2) polyCntX = 2;
-	if(polyCntY<2) polyCntY = 2;
-	while(polyCntX*polyCntY>32767) {
-		polyCntX /= 2;
-		polyCntY /= 2;
-	}
-
-	f32 ay = 0;
-	const f32 angleX = 2*M_PI/polyCntX;
-	const f32 angleY = 2*M_PI/polyCntY;
-	const u32 polyCntXpitch = polyCntX +1;
-	const u32 polyCntYpitch = polyCntY + 1;
-
-	buffer->cnt_vertices = polyCntYpitch*polyCntXpitch;
-	buffer->vertices = (S3DVertex*)rsxMemalign(128,buffer->cnt_vertices*sizeof(S3DVertex));
-
-	buffer->cnt_indices = polyCntY*polyCntX*6;
-	buffer->indices = (u16*)rsxMemalign(128,buffer->cnt_indices*sizeof(u16));
-
-	i = 0;
-	for(y=0;y<=polyCntY;y++) {
-		f32 axz = 0;
-
-		const f32 sinay = sinf(ay);
-		const f32 cosay = cosf(ay);
-		const f32 tu = (f32)y/(f32)polyCntY;
-		for(x=0;x<=polyCntX;x++) {
-			const Vector3 pos(static_cast<f32>((outerRadius - (innerRadius*cosf(axz)))*cosay),
-									  static_cast<f32>((outerRadius - (innerRadius*cosf(axz)))*sinay),
-									  static_cast<f32>(innerRadius*sinf(axz)));
-			
-			const Vector3 nrm(static_cast<f32>(-cosf(axz)*cosay),
-									  static_cast<f32>(-cosf(axz)*sinay),
-									  static_cast<f32>(sinf(axz)));
-
-			buffer->vertices[i] = S3DVertex(pos.getX(),pos.getY(),pos.getZ(),nrm.getX(),nrm.getY(),nrm.getZ(),tu,(f32)x/(f32)polyCntX);
-
-			axz += angleX;
-			i++;
-		}
-		ay += angleY;
-	}
-
-	i = 0;
-	level = 0;
-	for(y=0;y<polyCntY;y++) {
-		for(x=0;x<polyCntX - 1;x++) {
-			const u32 curr = level + x;
-			buffer->indices[i++] = curr;
-			buffer->indices[i++] = curr + polyCntXpitch;
-			buffer->indices[i++] = curr + 1 + polyCntXpitch;
-			
-			buffer->indices[i++] = curr;
-			buffer->indices[i++] = curr + 1 + polyCntXpitch;
-			buffer->indices[i++] = curr + 1;
-		}
-
-		buffer->indices[i++] = level + polyCntX;
-		buffer->indices[i++] = level + polyCntX - 1;
-		buffer->indices[i++] = level + polyCntX - 1 + polyCntXpitch;
-		
-		buffer->indices[i++] = level + polyCntX;
-		buffer->indices[i++] = level + polyCntX - 1 + polyCntXpitch;
-		buffer->indices[i++] = level + polyCntX + polyCntXpitch;
-
-		level += polyCntXpitch;
-	}
-
-	return buffer;
-}
-
-static SMeshBuffer* createSphere(f32 radius,u32 polyCntX,u32 polyCntY)
-{
-	u32 i,p1,p2,level;
-	u32 x,y,polyCntXpitch;
-	const f32 RECIPROCAL_PI = 1.0f/M_PI;
-	SMeshBuffer *buffer = new SMeshBuffer();
-
-	if(polyCntX<2) polyCntX = 2;
-	if(polyCntY<2) polyCntY = 2;
-	if(polyCntX*polyCntY>32767) {
-		if(polyCntX>polyCntY) 
-			polyCntX = 32767/polyCntY-1;
-		else
-			polyCntY = 32767/(polyCntX+1);
-	}
-	polyCntXpitch = polyCntX+1;
-
-	buffer->cnt_vertices = (polyCntXpitch*polyCntY)+2;
-	buffer->vertices = (S3DVertex*)rsxMemalign(128,buffer->cnt_vertices*sizeof(S3DVertex));
-
-	buffer->cnt_indices = (polyCntX*polyCntY)*6;
-	buffer->indices = (u16*)rsxMemalign(128,buffer->cnt_indices*sizeof(u16));
-
-	i = 0;
-	level = 0;
-	for(p1=0;p1<polyCntY-1;p1++) {
-		for(p2=0;p2<polyCntX-1;p2++) {
-			const u32 curr = level + p2;
-			buffer->indices[i++] = curr;
-			buffer->indices[i++] = curr + polyCntXpitch;
-			buffer->indices[i++] = curr + 1 + polyCntXpitch;
-
-			buffer->indices[i++] = curr;
-			buffer->indices[i++] = curr + 1 + polyCntXpitch;
-			buffer->indices[i++] = curr + 1;
-		}
-
-		buffer->indices[i++] = level + polyCntX;
-		buffer->indices[i++] = level + polyCntX - 1;
-		buffer->indices[i++] = level + polyCntX - 1 + polyCntXpitch;
-
-		buffer->indices[i++] = level + polyCntX;
-		buffer->indices[i++] = level + polyCntX - 1 + polyCntXpitch;
-		buffer->indices[i++] = level + polyCntX + polyCntXpitch;
-
-		level += polyCntXpitch;
-	}
-
-	const u32 polyCntSq = polyCntXpitch*polyCntY;
-	const u32 polyCntSq1 = polyCntSq+1;
-	const u32 polyCntSqM1 = (polyCntY-1)*polyCntXpitch;
-
-	for(p2=0;p2<polyCntX-1;p2++) {
-		buffer->indices[i++] = polyCntSq;
-		buffer->indices[i++] = p2;
-		buffer->indices[i++] = p2+1;
-
-		buffer->indices[i++] = polyCntSq1;
-		buffer->indices[i++] = polyCntSqM1+p2;
-		buffer->indices[i++] = polyCntSqM1+p2+1;
-	}
-
-	buffer->indices[i++] = polyCntSq;
-	buffer->indices[i++] = polyCntX-1;
-	buffer->indices[i++] = polyCntX;
-
-	buffer->indices[i++] = polyCntSq1;
-	buffer->indices[i++] = polyCntSqM1;
-	buffer->indices[i++] = polyCntSqM1+polyCntX-1;
-
-	f32 axz;
-	f32 ay = 0;
-	const f32 angelX = 2*M_PI/polyCntX;
-	const f32 angelY = M_PI/polyCntY;
-
-	i = 0;
-	for(y=0;y<polyCntY;y++) {
-		axz = 0;
-		ay += angelY;
-		const f32 sinay = sinf(ay);
-		for(x=0;x<polyCntX;x++) {
-			const Vector3 pos(static_cast<f32>(radius*cosf(axz)*sinay), static_cast<f32>(radius*cosf(ay)), static_cast<f32>(radius*sinf(axz)*sinay));
-			
-			Vector3 normal = normalize(pos);
-			
-			f32 tu = 0.5F;
-			if(y==0) {
-				if(normal.getY()!=-1.0F && normal.getY()!=1.0F)
-					tu = static_cast<f32>(acosf(clamp(normal.getX()/sinay,-1.0f,1.0f))*0.5F*RECIPROCAL_PI);
-				if(normal.getZ()<0.0F)
-					tu = 1-tu;
-			} else
-				tu = buffer->vertices[i - polyCntXpitch].u;
-
-			buffer->vertices[i] = S3DVertex(pos.getX(),pos.getY(),pos.getZ(),normal.getX(),normal.getY(),normal.getZ(),tu,static_cast<f32>(ay*RECIPROCAL_PI));
-			axz += angelX;
-			i++;
-		}
-		buffer->vertices[i] = S3DVertex(buffer->vertices[i-polyCntX]);
-		buffer->vertices[i].u = 1.0F;
-		i++;
-	}
-
-	buffer->vertices[i++] = S3DVertex(0.0F,radius,0.0F,0.0F,1.0F,0.0F,0.5F,0.0F);
-	buffer->vertices[i] = S3DVertex(0.0F,-radius,0.0F,0.0F,-1.0F,0.0F,0.5F,1.0F);
 
 	return buffer;
 }
@@ -435,6 +248,28 @@ float normalizeAnalogSticks(float raw) {
 	return normalized;
 }
 
+Matrix4 FPSViewRH(Vector3 eye, float pitch, float yaw) {
+	float cosPitch = cos(pitch);
+	float sinPitch = sin(pitch);
+	float cosYaw = cos(yaw);
+	float sinYaw = sin(yaw);
+
+	Vector3 xaxis = { cosYaw, 0, -sinYaw };
+	Vector3 yaxis = { sinYaw * sinPitch, cosPitch, cosYaw * sinPitch };
+	Vector3 zaxis = { sinYaw * cosPitch, -sinPitch, cosPitch * cosYaw };
+
+	// Create a 4x4 view matrix from the right, up, forward and eye position vectors
+	Matrix4 viewMatrix = {
+		Vector4(xaxis.getX(),            yaxis.getX(),            zaxis.getX(),      0),
+		Vector4(xaxis.getY(),            yaxis.getY(),            zaxis.getY(),      0),
+		Vector4(xaxis.getZ(),            yaxis.getZ(),            zaxis.getZ(),      0),
+		Vector4(-1 * dot(xaxis, eye), -1 * dot(yaxis, eye), -1 * dot(zaxis, eye), 1)
+	};
+
+	return viewMatrix;
+}
+
+
 void drawFrame(cam* camDat) {
 	u32 offset, color = 0;
 	Matrix4 rotX,rotY;
@@ -462,31 +297,13 @@ void drawFrame(cam* camDat) {
 		rsxSetViewportClip(context, i, display_width, display_height);
 
 
-
-	// calc the new eye_pos position with forward and right vector
-	Vector3 direction = Vector3(0.f, 0.f, 0.f);
 	Vector3 forward = Vector3(sinf(camDat->angle_y), 0,  cosf(camDat->angle_y));
-	Vector3 tmp_right = Vector3(cross((Vector3) {0.f, 1.f, 0.f}, forward));
-	
-	direction += camDat->pos_z * forward + camDat->pos_x * tmp_right;
+	Vector3 dir = Vector3(camDat->pos_z, 0, camDat->pos_x);
+	//dir = forward * dir;
+	eye_pos = (Point3) (dir + (Vector3) eye_pos);
 
-	eye_pos = (Point3) direction;
-	eye_pos = (Point3) normalize((Vector3) eye_pos);
+	viewMatrix = FPSViewRH((Vector3) eye_pos, camDat->angle_x, camDat->angle_y);
 
-
-	// calc the new eye_dir position
-	Vector3 tmp_eye = Vector3(
-		cosf(camDat->angle_x) * sinf(camDat->angle_y),
-        sinf(camDat->angle_x),
-        cosf(camDat->angle_x) * cosf(camDat->angle_y)
-	);
-	eye_dir = (Point3) normalize(tmp_eye);
-
-	Vector3 right = cross((Vector3) {0.f, 1.f, 0.f}, (Vector3) eye_dir);
-	Vector3 up = cross((Vector3) eye_dir, right);
-
-	Vector3 dir = (Vector3) direction + (Vector3) eye_dir;
-	viewMatrix = Matrix4::lookAt((Point3) direction, (Point3) dir, up);
 
 	rotX = Matrix4::rotationX(DEGTORAD(0)); //camDat->angle_x));
 	rotY = Matrix4::rotationY(DEGTORAD(0)); // camDat->angle_y));
@@ -532,6 +349,7 @@ void drawFrame(cam* camDat) {
 	rsxDrawIndexArray(context, GCM_TYPE_TRIANGLES, offset, mesh->cnt_indices, GCM_INDEX_TYPE_16B, GCM_LOCATION_RSX);
 }
 
+
 int main()
 {
 	cam cameraSticks = {0.f, 0.f, 0.f, 0.f};
@@ -546,8 +364,6 @@ int main()
 	init_shader();
 	init_texture();
 
-	sphere = createSphere(3.0f,32,32);
-	donut = createDonut(3.0f,1.5f,32,32);
 	cube = createCube(5.0f);
 
 	atexit(program_exit_callback);
@@ -567,8 +383,8 @@ int main()
 			if(padinfo.status[i]){
 				ioPadGetData(i, &paddata);
 
-				cameraSticks.pos_x -= 0.1 * normalizeAnalogSticks((f32) paddata.ANA_L_V);
-				cameraSticks.pos_z -= 0.1 * normalizeAnalogSticks((f32) paddata.ANA_L_H);
+				cameraSticks.pos_x = 0.1 * normalizeAnalogSticks((f32) paddata.ANA_L_V);
+				cameraSticks.pos_z = 0.1 * normalizeAnalogSticks((f32) paddata.ANA_L_H);
 				cameraSticks.angle_y -= 0.1 * normalizeAnalogSticks((f32) paddata.ANA_R_H);
 				cameraSticks.angle_x += 0.1 * normalizeAnalogSticks((f32) paddata.ANA_R_V);
 
@@ -591,3 +407,28 @@ done:
     program_exit_callback();
     return 0;
 }
+
+	// Lost n found; code from jdah minecraft weekend project
+	// // calc the new eye_pos position with forward and right vector
+	// Vector3 direction = Vector3(0.f, 0.f, 0.f);
+	// Vector3 forward = Vector3(sinf(camDat->angle_y), 0,  cosf(camDat->angle_y));
+	// Vector3 tmp_right = Vector3(cross((Vector3) {0.f, 1.f, 0.f}, forward));
+	
+	// direction += camDat->pos_z * forward + camDat->pos_x * tmp_right;
+	// eye_pos = (Point3) direction;
+	// eye_pos = (Point3) normalize((Vector3) eye_pos);
+
+
+	// // calc the new eye_dir position
+	// Vector3 tmp_eye = Vector3(
+	// 	cosf(camDat->angle_x) * sinf(camDat->angle_y),
+    //     sinf(camDat->angle_x),
+    //     cosf(camDat->angle_x) * cosf(camDat->angle_y)
+	// );
+	// eye_dir = (Point3) normalize(tmp_eye);
+
+	// Vector3 right = cross((Vector3) {0.f, 1.f, 0.f}, (Vector3) eye_dir);
+	// Vector3 up = cross((Vector3) eye_dir, right);
+
+	// Vector3 dir = (Vector3) direction + (Vector3) eye_dir;
+	// viewMatrix = Matrix4::lookAt((Point3) direction, (Point3) dir, up);
