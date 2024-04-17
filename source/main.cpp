@@ -46,13 +46,16 @@ rsxProgramConst *Kd;
 rsxProgramConst *Ks;
 rsxProgramConst *spec;
 
-Point3 eye_pos = Point3(0.0f, 0.0f, 20.0f);
-Point3 eye_dir = Point3(0.0f, 0.0f, 0.0f);
-Vector3 up_vec = Vector3(0.0f, 1.0f, 0.0f);
+/* position vectors */
+Vector3 fwd 	= Vector3(0.f, 0.f, -1.f);
+Vector3 right 	= Vector3(1.f, 0.f, 0.f);
+Vector3 up 		= Vector3(0.f, 1.f, 0.f);
 
 typedef struct {
-	f32 pos_x, pos_z, angle_y, angle_x;
-} cam;
+	Vector3 pos = Vector3(0.f, 0.f, 4.f);
+	float yaw = -90.f;
+	float pitch = 0.f;
+} camera;
 
 void *vp_ucode = NULL;
 rsxVertexProgram *vpo =(rsxVertexProgram*)diffuse_specular_shader_vpo;
@@ -104,6 +107,14 @@ static void init_texture()
 		buffer[i + 3] = *data++;
 		buffer[i + 0] = *data++;
 	}
+}
+
+float deg2rad(float deg) {
+	return deg * (M_PI / 180);
+}
+
+float clamp(float n, float lower, float upper) {
+  return std::max(lower, std::min(n, upper));
 }
 
 static SMeshBuffer* createCube(f32 size)
@@ -248,33 +259,11 @@ float normalizeAnalogSticks(float raw) {
 	return normalized;
 }
 
-Matrix4 FPSViewRH(Vector3 eye, float pitch, float yaw) {
-	float cosPitch = cos(pitch);
-	float sinPitch = sin(pitch);
-	float cosYaw = cos(yaw);
-	float sinYaw = sin(yaw);
-
-	Vector3 xaxis = { cosYaw, 0, -sinYaw };
-	Vector3 yaxis = { sinYaw * sinPitch, cosPitch, cosYaw * sinPitch };
-	Vector3 zaxis = { sinYaw * cosPitch, -sinPitch, cosPitch * cosYaw };
-
-	// Create a 4x4 view matrix from the right, up, forward and eye position vectors
-	Matrix4 viewMatrix = {
-		Vector4(xaxis.getX(),            yaxis.getX(),            zaxis.getX(),      0),
-		Vector4(xaxis.getY(),            yaxis.getY(),            zaxis.getY(),      0),
-		Vector4(xaxis.getZ(),            yaxis.getZ(),            zaxis.getZ(),      0),
-		Vector4(-1 * dot(xaxis, eye), -1 * dot(yaxis, eye), -1 * dot(zaxis, eye), 1)
-	};
-
-	return viewMatrix;
-}
-
-
-void drawFrame(cam* camDat) {
+void drawFrame(camera* camera) {
 	u32 offset, color = 0;
 	Matrix4 rotX,rotY;
 	Vector4 objEyePos, objLightPos;
-	Matrix4 viewMatrix, modelMatrix, modelMatrixIT, modelViewMatrix;
+	Matrix4 modelMatrix, modelMatrixIT, modelViewMatrix;
 	Point3 lightPos = Point3(250.0f, 150.0f, 150.0f);
 	f32 globalAmbientColor[3] = {0.1f, 0.1f, 0.1f};
 	f32 lightColor[3] = {0.95f, 0.95f, 0.95f};
@@ -282,6 +271,9 @@ void drawFrame(cam* camDat) {
 	f32 materialColorSpecular[3] = {0.7f, 0.6f, 0.6f};
 	f32 shininess = 17.8954f;
 	SMeshBuffer *mesh = cube;
+
+	Matrix4 viewMatrix = Matrix4::lookAt((Point3) camera->pos, (Point3) (camera->pos + fwd), up);
+
 
 	setDrawEnv();
 	setTexture(textureUnit->index);
@@ -296,22 +288,13 @@ void drawFrame(cam* camDat) {
 	for(size_t i = 0; i < 8; i++)
 		rsxSetViewportClip(context, i, display_width, display_height);
 
-
-	Vector3 forward = Vector3(sinf(camDat->angle_y), 0,  cosf(camDat->angle_y));
-	Vector3 dir = Vector3(camDat->pos_z, 0, camDat->pos_x);
-	//dir = forward * dir;
-	eye_pos = (Point3) (dir + (Vector3) eye_pos);
-
-	viewMatrix = FPSViewRH((Vector3) eye_pos, camDat->angle_x, camDat->angle_y);
-
-
-	rotX = Matrix4::rotationX(DEGTORAD(0)); //camDat->angle_x));
-	rotY = Matrix4::rotationY(DEGTORAD(0)); // camDat->angle_y));
+	rotX = Matrix4::rotationX(DEGTORAD(0)); 
+	rotY = Matrix4::rotationY(DEGTORAD(0));
 	modelMatrix = rotX * rotY;
 	modelMatrixIT = inverse(modelMatrix);
 	modelViewMatrix = transpose(viewMatrix * modelMatrix);
 
-	objEyePos = modelMatrixIT * eye_pos;
+	objEyePos = modelMatrixIT * (Point3) camera->pos;
 	objLightPos = modelMatrixIT * lightPos;
 
 	rsxAddressToOffset(&mesh->vertices[0].pos, &offset);
@@ -349,10 +332,24 @@ void drawFrame(cam* camDat) {
 	rsxDrawIndexArray(context, GCM_TYPE_TRIANGLES, offset, mesh->cnt_indices, GCM_INDEX_TYPE_16B, GCM_LOCATION_RSX);
 }
 
+void updateCamera(camera* cam) {
+	float yaw = deg2rad(cam->yaw);
+	float pitch = deg2rad(cam->pitch);
 
-int main()
-{
-	cam cameraSticks = {0.f, 0.f, 0.f, 0.f};
+	Vector3 new_fwd = {cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch)};
+	new_fwd = normalize(new_fwd);
+	fwd = new_fwd;
+
+	Vector3 new_right = normalize(cross(fwd, (Vector3) {0.f, 1.f, 0.f}));
+	right = new_right;
+
+	Vector3 new_up = normalize(cross(right, fwd));
+	up = new_up;
+}
+
+int main() {
+	camera camera;
+
 	padInfo padinfo;
 	padData paddata;
 	void *host_addr = memalign(HOST_ADDR_ALIGNMENT,HOSTBUFFER_SIZE);
@@ -369,8 +366,6 @@ int main()
 	atexit(program_exit_callback);
 	sysUtilRegisterCallback(0,sysutil_exit_callback,NULL);
 
-
-
 	setDrawEnv();
 	setRenderTarget(curr_fb);
 
@@ -383,18 +378,19 @@ int main()
 			if(padinfo.status[i]){
 				ioPadGetData(i, &paddata);
 
-				cameraSticks.pos_x = 0.1 * normalizeAnalogSticks((f32) paddata.ANA_L_V);
-				cameraSticks.pos_z = 0.1 * normalizeAnalogSticks((f32) paddata.ANA_L_H);
-				cameraSticks.angle_y -= 0.1 * normalizeAnalogSticks((f32) paddata.ANA_R_H);
-				cameraSticks.angle_x += 0.1 * normalizeAnalogSticks((f32) paddata.ANA_R_V);
+				camera.pos   -= 0.1 * fwd * normalizeAnalogSticks((f32) paddata.ANA_L_V);
+				camera.pos   += 0.1 * right * normalizeAnalogSticks((f32) paddata.ANA_L_H);
+				camera.yaw   += normalizeAnalogSticks((f32) paddata.ANA_R_H);
+				camera.pitch += normalizeAnalogSticks((f32) paddata.ANA_R_V);
+				camera.pitch = clamp(camera.pitch, -89.f, 89.f);
+				updateCamera(&camera);
 
 				if(paddata.BTN_CROSS)
 					goto done;
 			}
-
 		}
 		
-		drawFrame(&cameraSticks);
+		drawFrame(&camera);
 
 		P = transpose(Matrix4::perspective(DEGTORAD(90.f), aspect_ratio, 1.0f, 3000.0f));
 
@@ -407,28 +403,3 @@ done:
     program_exit_callback();
     return 0;
 }
-
-	// Lost n found; code from jdah minecraft weekend project
-	// // calc the new eye_pos position with forward and right vector
-	// Vector3 direction = Vector3(0.f, 0.f, 0.f);
-	// Vector3 forward = Vector3(sinf(camDat->angle_y), 0,  cosf(camDat->angle_y));
-	// Vector3 tmp_right = Vector3(cross((Vector3) {0.f, 1.f, 0.f}, forward));
-	
-	// direction += camDat->pos_z * forward + camDat->pos_x * tmp_right;
-	// eye_pos = (Point3) direction;
-	// eye_pos = (Point3) normalize((Vector3) eye_pos);
-
-
-	// // calc the new eye_dir position
-	// Vector3 tmp_eye = Vector3(
-	// 	cosf(camDat->angle_x) * sinf(camDat->angle_y),
-    //     sinf(camDat->angle_x),
-    //     cosf(camDat->angle_x) * cosf(camDat->angle_y)
-	// );
-	// eye_dir = (Point3) normalize(tmp_eye);
-
-	// Vector3 right = cross((Vector3) {0.f, 1.f, 0.f}, (Vector3) eye_dir);
-	// Vector3 up = cross((Vector3) eye_dir, right);
-
-	// Vector3 dir = (Vector3) direction + (Vector3) eye_dir;
-	// viewMatrix = Matrix4::lookAt((Point3) direction, (Point3) dir, up);
