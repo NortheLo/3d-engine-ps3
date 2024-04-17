@@ -1,4 +1,5 @@
 *.self
+*.fake.self
 *.elf
 *.o
 *.d
