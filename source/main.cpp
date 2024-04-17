@@ -63,7 +63,7 @@ rsxVertexProgram *vpo =(rsxVertexProgram*)diffuse_specular_shader_vpo;
 void *fp_ucode = NULL;
 rsxFragmentProgram *fpo =(rsxFragmentProgram*)diffuse_specular_shader_fpo;
 
-static Matrix4 P;
+static Matrix4 projectionMatrix;
 static SMeshBuffer *cube = NULL;
 
 SYS_PROCESS_PARAM(1001, 0x100000);
@@ -109,10 +109,16 @@ static void init_texture()
 	}
 }
 
+/*
+	Convert float input from degree to radians.
+*/
 float deg2rad(float deg) {
 	return deg * (M_PI / 180);
 }
 
+/*
+	Clamp value to given floors.
+*/
 float clamp(float n, float lower, float upper) {
   return std::max(lower, std::min(n, upper));
 }
@@ -153,8 +159,7 @@ static SMeshBuffer* createCube(f32 size)
 	return buffer;
 }
 
-static void setTexture(u8 textureUnit)
-{
+static void setTexture(u8 textureUnit) {
 	u32 width = 128;
 	u32 height = 128;
 	u32 pitch = (width*4);
@@ -254,11 +259,6 @@ void init_shader()
 	Kd = rsxFragmentProgramGetConst(fpo,"Kd");
 }
 
-float normalizeAnalogSticks(float raw) {
-	float normalized = (raw - 128.f) / 128.f;
-	return normalized;
-}
-
 void drawFrame(camera* camera) {
 	u32 offset, color = 0;
 	Matrix4 rotX,rotY;
@@ -288,26 +288,23 @@ void drawFrame(camera* camera) {
 	for(size_t i = 0; i < 8; i++)
 		rsxSetViewportClip(context, i, display_width, display_height);
 
-	rotX = Matrix4::rotationX(DEGTORAD(0)); 
-	rotY = Matrix4::rotationY(DEGTORAD(0));
-	modelMatrix = rotX * rotY;
 	modelMatrixIT = inverse(modelMatrix);
-	modelViewMatrix = transpose(viewMatrix * modelMatrix);
-
+	modelViewMatrix = transpose(viewMatrix);
 	objEyePos = modelMatrixIT * (Point3) camera->pos;
 	objLightPos = modelMatrixIT * lightPos;
 
 	rsxAddressToOffset(&mesh->vertices[0].pos, &offset);
 	rsxBindVertexArrayAttrib(context, GCM_VERTEX_ATTRIB_POS, 0, offset, sizeof(S3DVertex), 3, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
 
-	// rsxAddressToOffset(&mesh->vertices[0].nrm,&offset);
-	// rsxBindVertexArrayAttrib(context,GCM_VERTEX_ATTRIB_NORMAL,0,offset,sizeof(S3DVertex),3,GCM_VERTEX_DATA_TYPE_F32,GCM_LOCATION_RSX);
+	// load texture
+	rsxAddressToOffset(&mesh->vertices[0].nrm, &offset);
+	rsxBindVertexArrayAttrib(context, GCM_VERTEX_ATTRIB_NORMAL, 0, offset, sizeof(S3DVertex), 3, GCM_VERTEX_DATA_TYPE_F32,GCM_LOCATION_RSX);
 
-	// rsxAddressToOffset(&mesh->vertices[0].u,&offset);
-	// rsxBindVertexArrayAttrib(context,GCM_VERTEX_ATTRIB_TEX0,0,offset,sizeof(S3DVertex),2,GCM_VERTEX_DATA_TYPE_F32,GCM_LOCATION_RSX);
+	rsxAddressToOffset(&mesh->vertices[0].u, &offset);
+	rsxBindVertexArrayAttrib(context, GCM_VERTEX_ATTRIB_TEX0, 0, offset, sizeof(S3DVertex), 2, GCM_VERTEX_DATA_TYPE_F32,GCM_LOCATION_RSX);
 
 	rsxLoadVertexProgram(context, vpo,vp_ucode);
-	rsxSetVertexProgramParameter(context, vpo, projMatrix, (float*) &P);
+	rsxSetVertexProgramParameter(context, vpo, projMatrix, (float*) &projectionMatrix);
 	rsxSetVertexProgramParameter(context, vpo, mvMatrix, (float*) &modelViewMatrix);
 
 	rsxSetFragmentProgramParameter(context, fpo, eyePosition, (float*) &objEyePos, fp_offset, GCM_LOCATION_RSX);
@@ -332,6 +329,29 @@ void drawFrame(camera* camera) {
 	rsxDrawIndexArray(context, GCM_TYPE_TRIANGLES, offset, mesh->cnt_indices, GCM_INDEX_TYPE_16B, GCM_LOCATION_RSX);
 }
 
+/*
+	Calculate normalize the position from the sticks, so the center/default position is 0.f.
+	The value ranges from 1.f to -1.f depending from the position to the default position.
+*/
+float normalizeAnalogSticks(float raw) {
+	float normalized = (raw - 128.f) / 128.f;
+	return normalized;
+}
+
+/*
+	Calculate the new camera position from the stick inputs.
+*/
+void getCameraPosition(camera* cam, padData* pad) {
+	cam->pos   -= 0.1 * fwd * 	normalizeAnalogSticks((f32) pad->ANA_L_V);
+	cam->pos   += 0.1 * right * normalizeAnalogSticks((f32) pad->ANA_L_H);
+	cam->yaw   += 				normalizeAnalogSticks((f32) pad->ANA_R_H);
+	cam->pitch += 				normalizeAnalogSticks((f32) pad->ANA_R_V);
+	cam->pitch  = clamp(cam->pitch, -89.f, 89.f);
+}
+
+/* 
+	Calculate the new forward, right and up vector from the new camera position.
+*/
 void updateCamera(camera* cam) {
 	float yaw = deg2rad(cam->yaw);
 	float pitch = deg2rad(cam->pitch);
@@ -349,22 +369,20 @@ void updateCamera(camera* cam) {
 
 int main() {
 	camera camera;
-
 	padInfo padinfo;
 	padData paddata;
-	void *host_addr = memalign(HOST_ADDR_ALIGNMENT,HOSTBUFFER_SIZE);
 
-	printf("rsxtest started...\n");
+	void *host_addr = memalign(HOST_ADDR_ALIGNMENT, HOSTBUFFER_SIZE);
 
-	init_screen(host_addr,HOSTBUFFER_SIZE);
-	ioPadInit(7);
+	init_screen(host_addr, HOSTBUFFER_SIZE);
+	ioPadInit(1);
 	init_shader();
 	init_texture();
 
 	cube = createCube(5.0f);
 
 	atexit(program_exit_callback);
-	sysUtilRegisterCallback(0,sysutil_exit_callback,NULL);
+	sysUtilRegisterCallback(0, sysutil_exit_callback, NULL);
 
 	setDrawEnv();
 	setRenderTarget(curr_fb);
@@ -374,32 +392,25 @@ int main() {
 		sysUtilCheckCallback();
 
 		ioPadGetInfo(&padinfo);
-		for(int i=0; i < MAX_PADS; i++){
-			if(padinfo.status[i]){
-				ioPadGetData(i, &paddata);
 
-				camera.pos   -= 0.1 * fwd * normalizeAnalogSticks((f32) paddata.ANA_L_V);
-				camera.pos   += 0.1 * right * normalizeAnalogSticks((f32) paddata.ANA_L_H);
-				camera.yaw   += normalizeAnalogSticks((f32) paddata.ANA_R_H);
-				camera.pitch += normalizeAnalogSticks((f32) paddata.ANA_R_V);
-				camera.pitch = clamp(camera.pitch, -89.f, 89.f);
-				updateCamera(&camera);
+		if(padinfo.status[0]) {
+			ioPadGetData(0, &paddata);
 
-				if(paddata.BTN_CROSS)
-					goto done;
-			}
+			getCameraPosition(&camera, &paddata);
+			updateCamera(&camera);
+
+			if(paddata.BTN_START)
+				goto done;
 		}
 		
+		
 		drawFrame(&camera);
-
-		P = transpose(Matrix4::perspective(DEGTORAD(90.f), aspect_ratio, 1.0f, 3000.0f));
+		projectionMatrix = transpose(Matrix4::perspective(DEGTORAD(90.f), aspect_ratio, 1.0f, 3000.0f));
 
 		flip();
 	}
 
-done:
-    printf("rsxtest done...\n");
-
-    program_exit_callback();
-    return 0;
+	done:
+		program_exit_callback();
+		return 0;
 }
