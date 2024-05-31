@@ -8,6 +8,8 @@
 #include <math.h>
 #include <sys/process.h>
 
+#include <vector>
+
 #include <io/pad.h>
 #include <rsx/rsx.h>
 #include <sysutil/sysutil.h>
@@ -64,7 +66,7 @@ void *fp_ucode = NULL;
 rsxFragmentProgram *fpo =(rsxFragmentProgram*)diffuse_specular_shader_fpo;
 
 static Matrix4 projectionMatrix;
-static SMeshBuffer *cube = NULL;
+
 
 SYS_PROCESS_PARAM(1001, 0x100000);
 
@@ -123,7 +125,84 @@ float clamp(float n, float lower, float upper) {
   return std::max(lower, std::min(n, upper));
 }
 
-static SMeshBuffer* createCube(f32 size)
+static SMeshBuffer* createDonut(f32 outerRadius, f32 innerRadius,u32 polyCntX, u32 polyCntY)
+{
+	u32 i,x,y,level;
+	SMeshBuffer *buffer = new SMeshBuffer();
+
+	if(polyCntX<2) polyCntX = 2;
+	if(polyCntY<2) polyCntY = 2;
+	while(polyCntX*polyCntY>32767) {
+		polyCntX /= 2;
+		polyCntY /= 2;
+	}
+
+	f32 ay = 0;
+	const f32 angleX = 2*M_PI/polyCntX;
+	const f32 angleY = 2*M_PI/polyCntY;
+	const u32 polyCntXpitch = polyCntX +1;
+	const u32 polyCntYpitch = polyCntY + 1;
+
+	buffer->cnt_vertices = polyCntYpitch*polyCntXpitch;
+	buffer->vertices = (S3DVertex*)rsxMemalign(128,buffer->cnt_vertices*sizeof(S3DVertex));
+
+	buffer->cnt_indices = polyCntY*polyCntX*6;
+	buffer->indices = (u16*)rsxMemalign(128,buffer->cnt_indices*sizeof(u16));
+
+	i = 0;
+	for(y=0;y<=polyCntY;y++) {
+		f32 axz = 0;
+
+		const f32 sinay = sinf(ay);
+		const f32 cosay = cosf(ay);
+		const f32 tu = (f32)y/(f32)polyCntY;
+		for(x=0;x<=polyCntX;x++) {
+			const Vector3 pos(static_cast<f32>((outerRadius - (innerRadius*cosf(axz)))*cosay),
+									  static_cast<f32>((outerRadius - (innerRadius*cosf(axz)))*sinay),
+									  static_cast<f32>(innerRadius*sinf(axz)));
+			
+			const Vector3 nrm(static_cast<f32>(-cosf(axz)*cosay),
+									  static_cast<f32>(-cosf(axz)*sinay),
+									  static_cast<f32>(sinf(axz)));
+
+			buffer->vertices[i] = S3DVertex(pos.getX(),pos.getY(),pos.getZ(),nrm.getX(),nrm.getY(),nrm.getZ(),tu,(f32)x/(f32)polyCntX);
+
+			axz += angleX;
+			i++;
+		}
+		ay += angleY;
+	}
+
+	i = 0;
+	level = 0;
+	for(y=0;y<polyCntY;y++) {
+		for(x=0;x<polyCntX - 1;x++) {
+			const u32 curr = level + x;
+			buffer->indices[i++] = curr;
+			buffer->indices[i++] = curr + polyCntXpitch;
+			buffer->indices[i++] = curr + 1 + polyCntXpitch;
+			
+			buffer->indices[i++] = curr;
+			buffer->indices[i++] = curr + 1 + polyCntXpitch;
+			buffer->indices[i++] = curr + 1;
+		}
+
+		buffer->indices[i++] = level + polyCntX;
+		buffer->indices[i++] = level + polyCntX - 1;
+		buffer->indices[i++] = level + polyCntX - 1 + polyCntXpitch;
+		
+		buffer->indices[i++] = level + polyCntX;
+		buffer->indices[i++] = level + polyCntX - 1 + polyCntXpitch;
+		buffer->indices[i++] = level + polyCntX + polyCntXpitch;
+
+		level += polyCntXpitch;
+	}
+
+	return buffer;
+}
+
+
+static SMeshBuffer* createCube(f32 size, int x, int y , int z)
 {
 	u32 i;
 	SMeshBuffer *buffer = new SMeshBuffer();
@@ -138,18 +217,18 @@ static SMeshBuffer* createCube(f32 size)
 	buffer->cnt_vertices = 12;
 	buffer->vertices = (S3DVertex*)rsxMemalign(128,buffer->cnt_vertices*sizeof(S3DVertex));
 
-	buffer->vertices[0] = S3DVertex(0,0,0, -1,-1,-1, 1, 0);
-	buffer->vertices[1] = S3DVertex(1,0,0,  1,-1,-1, 1, 1);
-	buffer->vertices[2] = S3DVertex(1,1,0,  1, 1,-1, 0, 1);
-	buffer->vertices[3] = S3DVertex(0,1,0, -1, 1,-1, 0, 0);
-	buffer->vertices[4] = S3DVertex(1,0,1,  1,-1, 1, 1, 0);
-	buffer->vertices[5] = S3DVertex(1,1,1,  1, 1, 1, 0, 0);
-	buffer->vertices[6] = S3DVertex(0,1,1, -1, 1, 1, 0, 1);
-	buffer->vertices[7] = S3DVertex(0,0,1, -1,-1, 1, 1, 1);
-	buffer->vertices[8] = S3DVertex(0,1,1, -1, 1, 1, 1, 0);
-	buffer->vertices[9] = S3DVertex(0,1,0, -1, 1,-1, 1, 1);
-	buffer->vertices[10] = S3DVertex(1,0,1,  1,-1, 1, 0, 1);
-	buffer->vertices[11] = S3DVertex(1,0,0,  1,-1,-1, 0, 0);
+	buffer->vertices[0] = S3DVertex(0+x,0+y,0+z, -1,-1,-1, 1, 0);
+	buffer->vertices[1] = S3DVertex(1+x,0+y,0+z,  1,-1,-1, 1, 1);
+	buffer->vertices[2] = S3DVertex(1+x,1+y,0+z,  1, 1,-1, 0, 1);
+	buffer->vertices[3] = S3DVertex(0+x,1+y,0+z, -1, 1,-1, 0, 0);
+	buffer->vertices[4] = S3DVertex(1+x,0+y,1+z,  1,-1, 1, 1, 0);
+	buffer->vertices[5] = S3DVertex(1+x,1+y,1+z,  1, 1, 1, 0, 0);
+	buffer->vertices[6] = S3DVertex(0+x,1+y,1+z, -1, 1, 1, 0, 1);
+	buffer->vertices[7] = S3DVertex(0+x,0+y,1+z, -1,-1, 1, 1, 1);
+	buffer->vertices[8] = S3DVertex(0+x,1+y,1+z, -1, 1, 1, 1, 0);
+	buffer->vertices[9] = S3DVertex(0+x,1+y,0+z, -1, 1,-1, 1, 1);
+	buffer->vertices[10] = S3DVertex(1+x,0+y,1+z,  1,-1, 1, 0, 1);
+	buffer->vertices[11] = S3DVertex(1+x,0+y,0+z,  1,-1,-1, 0, 0);
 
 	for(i=0;i<12;i++) {
 		buffer->vertices[i].pos -= Vector3(0.5f,0.5f,0.5f);
@@ -231,8 +310,7 @@ static void setDrawEnv()
 	rsxSetFrontFace(context,GCM_FRONTFACE_CCW);
 }
 
-void init_shader()
-{
+void init_shader() {
 	u32 fpsize = 0;
 	u32 vpsize = 0;
 
@@ -259,25 +337,11 @@ void init_shader()
 	Kd = rsxFragmentProgramGetConst(fpo,"Kd");
 }
 
-void drawFrame(camera* camera) {
-	u32 offset, color = 0;
-	Matrix4 rotX,rotY;
-	Vector4 objEyePos, objLightPos;
-	Matrix4 modelMatrix, modelMatrixIT, modelViewMatrix;
-	Point3 lightPos = Point3(250.0f, 150.0f, 150.0f);
-	f32 globalAmbientColor[3] = {0.1f, 0.1f, 0.1f};
-	f32 lightColor[3] = {0.95f, 0.95f, 0.95f};
-	f32 materialColorDiffuse[3] = {0.5f, 0.0f, 0.0f};
-	f32 materialColorSpecular[3] = {0.7f, 0.6f, 0.6f};
-	f32 shininess = 17.8954f;
-	SMeshBuffer *mesh = cube;
-
-	Matrix4 viewMatrix = Matrix4::lookAt((Point3) camera->pos, (Point3) (camera->pos + fwd), up);
-
-
+void prepFrame() {
 	setDrawEnv();
 	setTexture(textureUnit->index);
 
+	u32 color = 0;
 	rsxSetClearColor(context, color);
 	rsxSetClearDepthStencil(context, 0xffffff00);
 	rsxClearSurface(context, GCM_CLEAR_R | GCM_CLEAR_G | GCM_CLEAR_B |
@@ -288,20 +352,45 @@ void drawFrame(camera* camera) {
 	for(size_t i = 0; i < 8; i++)
 		rsxSetViewportClip(context, i, display_width, display_height);
 
+}
+
+void drawFrame(camera* camera, auto &model_mesh, float trans) {
+	u32 offset, color = 0;
+	Matrix4 rotX, rotY;
+	Vector4 objEyePos, objLightPos;
+	Matrix4 modelMatrix, modelMatrixIT, modelViewMatrix;
+	Point3 lightPos = Point3(250.0f, 150.0f, 150.0f);
+	f32 globalAmbientColor[3] = {0.1f, 0.1f, 0.1f};
+	f32 lightColor[3] = {0.95f, 0.95f, 0.95f};
+	f32 materialColorDiffuse[3] = {0.5f, 0.0f, 0.0f};
+	f32 materialColorSpecular[3] = {0.7f, 0.6f, 0.6f};
+	f32 shininess = 17.8954f;
+
+	Matrix4 viewMatrix = Matrix4::lookAt((Point3) camera->pos, (Point3) (camera->pos + fwd), up);
+
 	modelMatrixIT = inverse(modelMatrix);
 	modelViewMatrix = transpose(viewMatrix);
 	objEyePos = modelMatrixIT * (Point3) camera->pos;
 	objLightPos = modelMatrixIT * lightPos;
 
-	rsxAddressToOffset(&mesh->vertices[0].pos, &offset);
+	modelMatrix.setTranslation(Vector3(trans, trans, 0.f));
+
+
+	setDrawEnv();
+	setTexture(textureUnit->index);
+
+
+	rsxAddressToOffset(&model_mesh->vertices[0].pos, &offset);
 	rsxBindVertexArrayAttrib(context, GCM_VERTEX_ATTRIB_POS, 0, offset, sizeof(S3DVertex), 3, GCM_VERTEX_DATA_TYPE_F32, GCM_LOCATION_RSX);
 
 	// load texture
-	rsxAddressToOffset(&mesh->vertices[0].nrm, &offset);
+	rsxAddressToOffset(&model_mesh->vertices[0].nrm, &offset);
 	rsxBindVertexArrayAttrib(context, GCM_VERTEX_ATTRIB_NORMAL, 0, offset, sizeof(S3DVertex), 3, GCM_VERTEX_DATA_TYPE_F32,GCM_LOCATION_RSX);
 
-	rsxAddressToOffset(&mesh->vertices[0].u, &offset);
-	rsxBindVertexArrayAttrib(context, GCM_VERTEX_ATTRIB_TEX0, 0, offset, sizeof(S3DVertex), 2, GCM_VERTEX_DATA_TYPE_F32,GCM_LOCATION_RSX);
+	rsxAddressToOffset(&model_mesh->vertices[0].u, &offset);
+
+	rsxAddressToOffset(&model_mesh->indices[0], &offset);
+	rsxDrawIndexArray(context, GCM_TYPE_TRIANGLES, offset, model_mesh->cnt_indices, GCM_INDEX_TYPE_16B, GCM_LOCATION_RSX);
 
 	rsxLoadVertexProgram(context, vpo,vp_ucode);
 	rsxSetVertexProgramParameter(context, vpo, projMatrix, (float*) &projectionMatrix);
@@ -319,14 +408,12 @@ void drawFrame(camera* camera) {
 	rsxLoadFragmentProgramLocation(context, fpo, fp_offset, GCM_LOCATION_RSX);
 
 	rsxSetUserClipPlaneControl(context,GCM_USER_CLIP_PLANE_DISABLE,
-									   GCM_USER_CLIP_PLANE_DISABLE,
-									   GCM_USER_CLIP_PLANE_DISABLE,
-									   GCM_USER_CLIP_PLANE_DISABLE,
-									   GCM_USER_CLIP_PLANE_DISABLE,
-									   GCM_USER_CLIP_PLANE_DISABLE);
-
-	rsxAddressToOffset(&mesh->indices[0], &offset);
-	rsxDrawIndexArray(context, GCM_TYPE_TRIANGLES, offset, mesh->cnt_indices, GCM_INDEX_TYPE_16B, GCM_LOCATION_RSX);
+										GCM_USER_CLIP_PLANE_DISABLE,
+										GCM_USER_CLIP_PLANE_DISABLE,
+										GCM_USER_CLIP_PLANE_DISABLE,
+										GCM_USER_CLIP_PLANE_DISABLE,
+										GCM_USER_CLIP_PLANE_DISABLE);
+	
 }
 
 /*
@@ -379,7 +466,12 @@ int main() {
 	init_shader();
 	init_texture();
 
-	cube = createCube(5.0f);
+	unsigned int num_models = 2;
+	SMeshBuffer* cube = createCube(5.0f, 0, 0, 0);
+	SMeshBuffer* donut = createDonut(3.0f, 1.5f, 32, 32);
+    SMeshBuffer** models_mesh = new SMeshBuffer*[num_models];  	
+	models_mesh[0] = cube;
+	models_mesh[1] = donut;
 
 	atexit(program_exit_callback);
 	sysUtilRegisterCallback(0, sysutil_exit_callback, NULL);
@@ -403,14 +495,23 @@ int main() {
 				goto done;
 		}
 		
-		
-		drawFrame(&camera);
-		projectionMatrix = transpose(Matrix4::perspective(DEGTORAD(90.f), aspect_ratio, 1.0f, 3000.0f));
+	prepFrame();
 
-		flip();
+	float arr[] = {0.f, 5.f};
+	for (unsigned int i = 0; i < num_models; i++) {
+		SMeshBuffer* mesh = models_mesh[i];
+		drawFrame(&camera, mesh, arr[i]);
+	}
+
+
+	projectionMatrix = transpose(Matrix4::perspective(DEGTORAD(90.f), aspect_ratio, 1.0f, 3000.0f));
+
+	flip();
+
 	}
 
 	done:
+		delete[] models_mesh;
 		program_exit_callback();
 		return 0;
 }

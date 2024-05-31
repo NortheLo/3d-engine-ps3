@@ -30,7 +30,7 @@ CONTENTID	:=	UP0001-$(APPID)_00-0000000000000000
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS		=	-O2 -std=c++11 -Wall -Wextra -mcpu=cell -maltivec -mabi=altivec $(MACHDEP) $(INCLUDE)
+CFLAGS		=	-O2 -std=c++14 -Wall -Wextra -mcpu=cell -maltivec -mabi=altivec $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=	$(CFLAGS)
 
 LDFLAGS		=	$(MACHDEP) -Wl,-Map,$(notdir $@).map
