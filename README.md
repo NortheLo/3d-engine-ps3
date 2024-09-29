@@ -7,4 +7,6 @@ Sporadically this code gets tested on a "real" PS3 with HEN (4.90), but developm
 # How to run
 Install:
  - RPCS3 emulator 
- - PSL1GHT SDK and the ps3 toolchains installed. 
+ - PSL1GHT SDK and the ps3 toolchains installed.
+# Donut example  
+![ps3-engine-donut](https://github.com/user-attachments/assets/fab774fc-8072-4d44-b6bd-1c565daeccda)
